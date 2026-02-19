@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Colors ──────────────────────────────── */
+  --color-bg: #0a0a0a;
+  --color-bg-surface: #111111;
+  --color-bg-elevated: #1a1a1a;
+  --color-bg-hover: #222222;
+
+  --color-border: #333333;
+  --color-border-bright: #00ff88;
+
+  --color-accent: #00ff88;
+  --color-accent-muted: #00de73;
+  --color-accent-dim: #00ff8833;
+
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #888888;
+  --color-text-muted: #555555;
+
+  --color-twin: #a78bfa;
+  --color-twin-dim: #a78bfa33;
+
+  --color-danger: #ff4444;
+  --color-warning: #ffaa00;
+  --color-info: #44aaff;
+
+  /* ─── Fonts ───────────────────────────────── */
+  --font-sans: "Satoshi", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* ─── Spacing/Radius ──────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+/* ─── Base ──────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+::selection {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+}
+
+/* ─── CRT Glow Effect ──────────────────────── */
+.crt-glow {
+  box-shadow:
+    0 0 10px var(--color-accent-dim),
+    inset 0 0 10px var(--color-accent-dim);
+}
+
+.crt-border {
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.crt-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 136, 0.015) 2px,
+    rgba(0, 255, 136, 0.015) 4px
+  );
+}
+
+/* ─── Text Glow ─────────────────────────────── */
+.text-glow {
+  text-shadow: 0 0 8px var(--color-accent-dim);
+}
+
+/* ─── Twin Message Indicator ────────────────── */
+.twin-glow {
+  box-shadow:
+    0 0 8px var(--color-twin-dim),
+    inset 0 0 8px var(--color-twin-dim);
+}
