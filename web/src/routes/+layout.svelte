@@ -25,7 +25,10 @@
           signature: wallet.signature!,
           message: wallet.siweMessage!
         });
-        socket.emit('channel:join', chat.activeChannel);
+        // Join ALL channels so we receive messages for unread counts
+        for (const channel of chat.channels) {
+          socket.emit('channel:join', channel.id);
+        }
       });
       chat.bindSocket();
       twin.bindSocket();
@@ -35,16 +38,19 @@
 
   function openChannel(channelId: string) {
     chat.setActiveChannel(channelId);
+    chat.setViewingChat(true);
     direction = 1;
     currentScreen = 'chat';
   }
 
   function openTwin() {
+    chat.setViewingChat(false);
     direction = 1;
     currentScreen = 'twin';
   }
 
   function goBack() {
+    chat.setViewingChat(false);
     direction = -1;
     currentScreen = 'channels';
   }

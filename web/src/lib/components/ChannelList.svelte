@@ -43,9 +43,16 @@
             <p class="text-xs text-text-muted mt-0.5">{channel.description}</p>
           {/if}
         </div>
-        <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
+        <div class="flex items-center gap-2">
+          {#if chat.unreadCounts[channel.id]}
+            <span class="min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-text-primary text-bg text-[11px] font-bold">
+              {chat.unreadCounts[channel.id]}
+            </span>
+          {/if}
+          <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </button>
     {/each}
 

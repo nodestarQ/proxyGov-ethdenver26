@@ -8,6 +8,7 @@ interface ChatState {
   activeChannel: string;
   members: User[];
   loading: boolean;
+  unreadCounts: Record<string, number>;
 }
 
 let state = $state<ChatState>({
@@ -15,10 +16,12 @@ let state = $state<ChatState>({
   channels: DEFAULT_CHANNELS.map(c => ({ ...c, members: [], createdAt: new Date().toISOString() })),
   activeChannel: 'general',
   members: [],
-  loading: false
+  loading: false,
+  unreadCounts: {}
 });
 
 let socketBound = false;
+let viewingChat = false;
 
 export const chat = {
   get messages() { return state.messages.filter(m => m.channelId === state.activeChannel); },
@@ -27,9 +30,19 @@ export const chat = {
   get activeChannel() { return state.activeChannel; },
   get members() { return state.members; },
   get loading() { return state.loading; },
+  get unreadCounts() { return state.unreadCounts; },
+
+  setViewingChat(viewing: boolean) {
+    viewingChat = viewing;
+    if (viewing) {
+      // Clear unread for the channel being viewed
+      state.unreadCounts = { ...state.unreadCounts, [state.activeChannel]: 0 };
+    }
+  },
 
   setActiveChannel(channelId: string) {
     state.activeChannel = channelId;
+    state.unreadCounts = { ...state.unreadCounts, [channelId]: 0 };
     const socket = getSocket();
     socket.emit('channel:join', channelId);
   },
@@ -54,6 +67,14 @@ export const chat = {
 
     socket.on('message:new', (message) => {
       state.messages = [...state.messages, message];
+      // Count as unread unless we're currently viewing that channel's chat
+      const isViewing = viewingChat && message.channelId === state.activeChannel;
+      if (!isViewing) {
+        state.unreadCounts = {
+          ...state.unreadCounts,
+          [message.channelId]: (state.unreadCounts[message.channelId] ?? 0) + 1
+        };
+      }
     });
 
     socket.on('message:reaction', ({ messageId, emoji, address, action }) => {
