@@ -95,7 +95,6 @@ export async function generateResponse(
     content: `[${m.sender}${m.isTwin ? ' (AI Twin)' : ''}]: ${m.content}`
   }));
 
-  // Add the new message
   conversationHistory.push({
     role: 'user' as const,
     content: `[${sender}]: ${message}`
