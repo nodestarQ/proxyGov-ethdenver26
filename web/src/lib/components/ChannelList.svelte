@@ -2,15 +2,24 @@
   import { chat } from '$lib/stores/chat.svelte';
   import { wallet } from '$lib/stores/wallet.svelte';
   import { twin } from '$lib/stores/twin.svelte';
+  import { profile } from '$lib/stores/profile.svelte';
   import { truncateAddress } from '$lib/utils/format';
   import TwinStatusBadge from './TwinStatusBadge.svelte';
-  import WalletConnect from './WalletConnect.svelte';
 
   interface Props {
     onSelectChannel: (channelId: string) => void;
     onOpenTwin: () => void;
+    onOpenSettings: () => void;
   }
-  let { onSelectChannel, onOpenTwin }: Props = $props();
+  let { onSelectChannel, onOpenTwin, onOpenSettings }: Props = $props();
+
+  const EMOJI_AVATARS = [
+    '🦊', '🐺', '🦁', '🐸', '🐙',
+    '🤖', '👾', '🛸', '🌀', '💎',
+    '🔮', '🧿', '⚡', '🌿', '🎭',
+    '🗿', '🏴‍☠️', '🧬', '🪐', '🎲',
+  ];
+  const isEmoji = $derived(EMOJI_AVATARS.includes(profile.avatarUrl));
 </script>
 
 <div class="flex flex-col h-full">
@@ -21,7 +30,21 @@
         <h1 class="text-lg font-bold text-text-primary tracking-tight">proxyGov</h1>
         <p class="text-[11px] text-text-muted">Governance, without timezones</p>
       </div>
-      <WalletConnect />
+      <!-- Profile avatar → settings -->
+      <button
+        onclick={onOpenSettings}
+        class="w-9 h-9 rounded-full border border-border bg-bg-surface flex items-center justify-center overflow-hidden
+               hover:border-text-muted transition-colors"
+        aria-label="Settings"
+      >
+        {#if profile.avatarUrl && !isEmoji}
+          <img src={profile.avatarUrl} alt="" class="w-full h-full object-cover" />
+        {:else if isEmoji}
+          <span class="text-lg">{profile.avatarUrl}</span>
+        {:else}
+          <span class="text-xs text-text-muted">{profile.displayName.charAt(0).toUpperCase()}</span>
+        {/if}
+      </button>
     </div>
   </header>
 

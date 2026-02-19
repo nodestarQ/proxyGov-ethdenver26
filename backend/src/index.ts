@@ -15,6 +15,7 @@ import messagesRouter from './routes/messages.js';
 import twinRouter from './routes/twin.js';
 import uniswapRouter from './routes/uniswap.js';
 import pollRouter from './routes/poll.js';
+import userRouter from './routes/user.js';
 import { getTokenPrice } from './uniswap.js';
 
 const PORT = parseInt(process.env.PORT || '3002');
@@ -25,13 +26,14 @@ initDb();
 // Express app
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // API routes
 app.use('/api', messagesRouter);
 app.use('/api', twinRouter);
 app.use('/api', uniswapRouter);
 app.use('/api', pollRouter);
+app.use('/api', userRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

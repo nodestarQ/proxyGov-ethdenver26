@@ -66,12 +66,12 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       }
 
       userAddress = address;
-      const displayName = generateDisplayName(address);
-      connectedUsers.set(address, { socketId: socket.id, displayName });
 
-      // Upsert user
+      // Upsert user — use saved display name if profile exists, else generate one
       const now = new Date().toISOString();
       const existing = db.select().from(users).where(eq(users.address, address)).get();
+      const displayName = existing?.displayName ?? generateDisplayName(address);
+
       if (!existing) {
         db.insert(users).values({
           address,
@@ -84,10 +84,13 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
         db.update(users).set({ status: 'online' }).where(eq(users.address, address)).run();
       }
 
+      connectedUsers.set(address, { socketId: socket.id, displayName });
+
       // Broadcast user join
       const user: User = {
         address,
         displayName,
+        avatarUrl: existing?.avatarUrl ?? undefined,
         status: 'online',
         twinEnabled: existing?.twinEnabled ?? false,
         joinedAt: existing?.joinedAt ?? now

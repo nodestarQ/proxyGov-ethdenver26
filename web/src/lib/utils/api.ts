@@ -13,6 +13,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // User / Profile
+  getUser: (address: string) =>
+    request<{ exists: boolean; profileSetup?: boolean; displayName?: string; avatarUrl?: string }>(`/user/${address}`),
+  updateUser: (address: string, data: { displayName: string; avatarUrl?: string }) =>
+    request<{ address: string; displayName: string; avatarUrl?: string }>(`/user/${address}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    }),
+
   // Messages
   getMessages: (channelId: string) =>
     request<any[]>(`/messages?channelId=${channelId}`),
