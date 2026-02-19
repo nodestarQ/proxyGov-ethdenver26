@@ -6,8 +6,9 @@
 
   interface Props {
     onBack: () => void;
+    onLogout: () => void;
   }
-  let { onBack }: Props = $props();
+  let { onBack, onLogout }: Props = $props();
 
   const AVATARS = [
     '🦊', '🐺', '🦁', '🐸', '🐙',
@@ -157,25 +158,36 @@
     {/if}
   </div>
 
-  <!-- Save -->
-  <div class="p-4 border-t border-border bg-bg-surface">
-    <button
-      onclick={handleSave}
-      disabled={!canSubmit || saving}
-      class="w-full py-2.5 rounded-lg font-medium text-sm transition-colors
-             {saved
-               ? 'bg-bg-elevated text-text-muted border border-border'
-               : canSubmit && !saving
-                 ? 'bg-text-primary text-bg hover:opacity-90'
-                 : 'bg-bg-elevated text-text-muted border border-border cursor-not-allowed'}"
-    >
-      {#if saving}
-        Saving...
-      {:else if saved}
-        Saved
-      {:else}
-        Save changes
-      {/if}
-    </button>
+  <!-- Save + Logout -->
+  <div class="border-t border-border bg-bg-surface">
+    <div class="px-4 pt-4 pb-3">
+      <button
+        onclick={handleSave}
+        disabled={!canSubmit || saving}
+        class="w-full py-2.5 rounded-lg font-medium text-sm transition-colors
+               {saved
+                 ? 'bg-bg-elevated text-text-muted border border-border'
+                 : canSubmit && !saving
+                   ? 'bg-text-primary text-bg hover:opacity-90'
+                   : 'bg-bg-elevated text-text-muted border border-border cursor-not-allowed'}"
+      >
+        {#if saving}
+          Saving...
+        {:else if saved}
+          Saved
+        {:else}
+          Save changes
+        {/if}
+      </button>
+    </div>
+    <div class="border-t border-border px-4 pt-3 pb-4">
+      <button
+        onclick={onLogout}
+        class="w-full py-2.5 rounded-lg font-medium text-sm text-danger border border-danger/30
+               hover:bg-danger/10 transition-colors"
+      >
+        Log out
+      </button>
+    </div>
   </div>
 </div>

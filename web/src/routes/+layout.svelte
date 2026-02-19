@@ -89,6 +89,13 @@
     direction = -1;
     currentScreen = 'channels';
   }
+
+  function handleLogout() {
+    disconnectSocket();
+    wallet.disconnect();
+    profile.set('', '');
+    currentScreen = 'loading';
+  }
 </script>
 
 <div class="min-h-dvh bg-bg-elevated/50">
@@ -130,7 +137,7 @@
           {:else if currentScreen === 'twin'}
             <TwinConfigPanel onBack={goBack} />
           {:else if currentScreen === 'settings'}
-            <Settings onBack={goBack} />
+            <Settings onBack={goBack} onLogout={handleLogout} />
           {/if}
         </div>
       {/key}
