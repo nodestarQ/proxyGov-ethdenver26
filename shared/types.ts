@@ -116,7 +116,7 @@ export interface ClientToServerEvents {
   'message:react': (data: { messageId: string; emoji: string }) => void;
   'channel:join': (channelId: string) => void;
   'channel:leave': (channelId: string) => void;
-  'user:authenticate': (data: { address: string; signature: string }) => void;
+  'user:authenticate': (data: { address: string; signature: string; message: string }) => void;
   'user:status': (status: User['status']) => void;
   'poll:vote': (data: { pollId: string; optionId: string }) => void;
 }

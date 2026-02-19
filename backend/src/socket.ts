@@ -3,6 +3,7 @@ import { db } from './db.js';
 import { users, messages, channelMembers } from './schema.js';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuid } from 'uuid';
+import { verifyMessage, type Address } from 'viem';
 import type { ServerToClientEvents, ClientToServerEvents, User, Message } from '../../shared/types.js';
 
 // Track connected sockets by address
@@ -21,7 +22,49 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
   io.on('connection', (socket) => {
     let userAddress: string | null = null;
 
-    socket.on('user:authenticate', async ({ address }) => {
+    socket.on('user:authenticate', async ({ address, signature, message }) => {
+      // Verify SIWE signature
+      try {
+        const valid = await verifyMessage({
+          address: address as Address,
+          message,
+          signature: signature as `0x${string}`
+        });
+
+        if (!valid) {
+          console.warn(`[socket] SIWE verification failed for ${address.slice(0, 8)}...`);
+          socket.emit('message:new', {
+            id: uuid(),
+            channelId: 'general',
+            sender: 'system',
+            senderName: 'System',
+            isTwin: false,
+            type: 'system',
+            content: 'Signature verification failed. Please reconnect.',
+            reactions: {},
+            timestamp: new Date().toISOString()
+          });
+          socket.disconnect(true);
+          return;
+        }
+
+        // Check timestamp freshness (5 min window)
+        const issuedAtMatch = message.match(/Issued At: (.+)$/m);
+        if (issuedAtMatch) {
+          const issuedAt = new Date(issuedAtMatch[1]).getTime();
+          const now = Date.now();
+          if (now - issuedAt > 5 * 60 * 1000) {
+            console.warn(`[socket] SIWE message expired for ${address.slice(0, 8)}...`);
+            socket.disconnect(true);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error(`[socket] SIWE verification error:`, err);
+        socket.disconnect(true);
+        return;
+      }
+
       userAddress = address;
       const displayName = generateDisplayName(address);
       connectedUsers.set(address, { socketId: socket.id, displayName });
@@ -51,7 +94,7 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       };
       io.emit('user:join', user);
 
-      console.log(`[socket] ${displayName} (${address.slice(0, 8)}...) connected`);
+      console.log(`[socket] ${displayName} (${address.slice(0, 8)}...) SIWE verified & connected`);
     });
 
     socket.on('channel:join', (channelId) => {

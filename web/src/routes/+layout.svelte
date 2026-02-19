@@ -21,7 +21,11 @@
     if (wallet.connected && wallet.address) {
       const socket = connectSocket(wallet.address);
       socket.on('connect', () => {
-        socket.emit('user:authenticate', { address: wallet.address!, signature: '' });
+        socket.emit('user:authenticate', {
+          address: wallet.address!,
+          signature: wallet.signature!,
+          message: wallet.siweMessage!
+        });
         socket.emit('channel:join', chat.activeChannel);
       });
       chat.bindSocket();

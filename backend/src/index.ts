@@ -9,8 +9,6 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { initDb } from './db.js';
 import { setupSocket } from './socket.js';
 import messagesRouter from './routes/messages.js';
@@ -19,7 +17,6 @@ import uniswapRouter from './routes/uniswap.js';
 import pollRouter from './routes/poll.js';
 import { getTokenPrice } from './uniswap.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.PORT || '3002');
 
 // Initialize database
@@ -42,7 +39,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Serve static frontend in production
-const publicPath = path.join(__dirname, '..', 'public');
+const publicPath = path.join(__dirname0, '..', 'public');
 app.use(express.static(publicPath));
 app.get('/{*path}', (_req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));

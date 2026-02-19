@@ -7,6 +7,8 @@ interface WalletState {
   chainId: number | null;
   connecting: boolean;
   error: string | null;
+  signature: string | null;
+  siweMessage: string | null;
 }
 
 let state = $state<WalletState>({
@@ -14,7 +16,9 @@ let state = $state<WalletState>({
   connected: false,
   chainId: null,
   connecting: false,
-  error: null
+  error: null,
+  signature: null,
+  siweMessage: null
 });
 
 export const wallet = {
@@ -23,6 +27,8 @@ export const wallet = {
   get chainId() { return state.chainId; },
   get connecting() { return state.connecting; },
   get error() { return state.error; },
+  get signature() { return state.signature; },
+  get siweMessage() { return state.siweMessage; },
 
   async connect() {
     if (typeof window === 'undefined' || !window.ethereum) {
@@ -63,7 +69,24 @@ export const wallet = {
         }
       }
 
+      // Sign-In with Ethereum (SIWE)
+      const siweMessage = [
+        `${window.location.host} wants you to sign in with your Ethereum account:`,
+        address,
+        '',
+        'Sign in to proxyGov DAO Twin Chat',
+        '',
+        `URI: ${window.location.origin}`,
+        'Version: 1',
+        `Chain ID: ${sepolia.id}`,
+        `Issued At: ${new Date().toISOString()}`
+      ].join('\n');
+
+      const signature = await walletClient.signMessage({ account: address, message: siweMessage });
+
       state.address = address;
+      state.signature = signature;
+      state.siweMessage = siweMessage;
       state.connected = true;
       state.chainId = sepolia.id;
 
@@ -91,6 +114,8 @@ export const wallet = {
     state.connected = false;
     state.chainId = null;
     state.error = null;
+    state.signature = null;
+    state.siweMessage = null;
   }
 };
 
