@@ -40,10 +40,10 @@
 {#if !wallet.connected}
   <!-- Landing / Connect -->
   <div class="min-h-screen flex items-center justify-center bg-bg">
-    <div class="text-center space-y-6">
+    <div class="text-center space-y-6 w-full px-4 md:w-1/2 md:px-0">
       <div class="crt-border rounded-lg p-8 bg-bg-surface crt-glow">
-        <h1 class="text-4xl font-bold text-accent text-glow tracking-tight mb-1">proxyGov</h1>
-        <p class="text-text-secondary text-sm mb-6">DAO coordination with AI twins</p>
+        <h1 class="text-4xl font-bold text-text-primary tracking-tight mb-1">proxyGov</h1>
+        <p class="text-text-secondary text-sm mb-6">Governance, without timezones</p>
         <WalletConnect />
       </div>
       <p class="text-xs text-text-muted">Connect your wallet on Sepolia to enter</p>

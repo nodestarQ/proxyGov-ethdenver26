@@ -7,17 +7,17 @@
   <button
     onclick={() => wallet.disconnect()}
     class="flex items-center gap-2 px-3 py-1.5 border border-border rounded-md
-           hover:border-accent hover:text-accent transition-colors font-mono text-sm"
+           hover:bg-bg-hover transition-colors font-mono text-sm text-text-primary"
   >
-    <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+    <span class="w-2 h-2 rounded-full bg-text-primary animate-pulse"></span>
     {truncateAddress(wallet.address!)}
   </button>
 {:else}
   <button
     onclick={() => wallet.connect()}
     disabled={wallet.connecting}
-    class="px-4 py-2 border border-accent text-accent rounded-md font-medium
-           hover:bg-accent hover:text-bg transition-colors
+    class="px-4 py-2 border border-border text-text-primary rounded-md font-medium
+           hover:bg-bg-hover transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed"
   >
     {#if wallet.connecting}

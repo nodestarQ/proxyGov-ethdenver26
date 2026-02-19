@@ -2,28 +2,28 @@
 
 @theme {
   /* ─── Colors ──────────────────────────────── */
-  --color-bg: #0a0a0a;
-  --color-bg-surface: #111111;
-  --color-bg-elevated: #1a1a1a;
-  --color-bg-hover: #222222;
+  --color-bg: #d4ded1;
+  --color-bg-surface: #c8d4c5;
+  --color-bg-elevated: #bfcbbc;
+  --color-bg-hover: #b6c3b3;
 
-  --color-border: #333333;
-  --color-border-bright: #00ff88;
+  --color-border: #0d0d0d;
+  --color-border-bright: #0d0d0d;
 
-  --color-accent: #00ff88;
-  --color-accent-muted: #00de73;
-  --color-accent-dim: #00ff8833;
+  --color-accent: #0d0d0d;
+  --color-accent-muted: #2a2a2a;
+  --color-accent-dim: #0d0d0d15;
 
-  --color-text-primary: #e0e0e0;
-  --color-text-secondary: #888888;
-  --color-text-muted: #555555;
+  --color-text-primary: #0d0d0d;
+  --color-text-secondary: #3a3a3a;
+  --color-text-muted: #6b6b6b;
 
-  --color-twin: #a78bfa;
-  --color-twin-dim: #a78bfa33;
+  --color-twin: #7c3aed;
+  --color-twin-dim: #7c3aed20;
 
-  --color-danger: #ff4444;
-  --color-warning: #ffaa00;
-  --color-info: #44aaff;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+  --color-info: #2563eb;
 
   /* ─── Fonts ───────────────────────────────── */
   --font-sans: "Satoshi", ui-sans-serif, system-ui, sans-serif;
@@ -46,40 +46,21 @@
   color: var(--color-accent);
 }
 
-/* ─── CRT Glow Effect ──────────────────────── */
+/* ─── Card Style ───────────────────────────── */
 .crt-glow {
-  box-shadow:
-    0 0 10px var(--color-accent-dim),
-    inset 0 0 10px var(--color-accent-dim);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .crt-border {
   border: 1px solid var(--color-border);
-  position: relative;
 }
 
-.crt-border::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 255, 136, 0.015) 2px,
-    rgba(0, 255, 136, 0.015) 4px
-  );
-}
-
-/* ─── Text Glow ─────────────────────────────── */
+/* ─── Text Accent ──────────────────────────── */
 .text-glow {
-  text-shadow: 0 0 8px var(--color-accent-dim);
+  color: var(--color-accent);
 }
 
 /* ─── Twin Message Indicator ────────────────── */
 .twin-glow {
-  box-shadow:
-    0 0 8px var(--color-twin-dim),
-    inset 0 0 8px var(--color-twin-dim);
+  box-shadow: 0 0 0 1px var(--color-twin-dim);
 }
