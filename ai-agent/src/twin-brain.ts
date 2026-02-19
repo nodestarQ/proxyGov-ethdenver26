@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient() {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 interface TwinConfig {
   ownerAddress: string;
@@ -97,7 +101,7 @@ export async function generateResponse(
     content: `[${sender}]: ${message}`
   });
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 300,
     system: systemPrompt,

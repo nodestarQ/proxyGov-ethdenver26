@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 const UNISWAP_API_URL = process.env.UNISWAP_API_URL || 'https://trading-api-labs.interface.gateway.uniswap.org/v1';
 const UNISWAP_API_KEY = process.env.UNISWAP_API_KEY || '';
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '11155111');

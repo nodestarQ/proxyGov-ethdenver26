@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient() {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 interface MessageForAnalysis {
   sender: string;
@@ -25,7 +29,7 @@ export async function analyzeForOpportunities(
     .map(m => `[${m.sender}]: ${m.content}`)
     .join('\n');
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
     system: `You analyze DAO chat messages for opportunities relevant to a member with these interests: ${userInterests.join(', ') || 'DeFi, governance'}.

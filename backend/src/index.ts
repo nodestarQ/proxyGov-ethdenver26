@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname0 = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname0, '../../.env') });
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';

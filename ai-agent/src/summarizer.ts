@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient() {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 interface MessageForSummary {
   sender: string;
@@ -26,7 +30,7 @@ export async function summarizeConversation(
     .map(m => `[${m.timestamp}] ${m.sender}${m.isTwin ? ' (AI Twin)' : ''}: ${m.content}`)
     .join('\n');
 
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
     system: `You summarize DAO chat conversations. The user's interests are: ${userInterests.join(', ') || 'general governance'}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
