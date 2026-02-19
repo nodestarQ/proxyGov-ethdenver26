@@ -32,6 +32,13 @@ export const api = {
   getTokens: () =>
     request<any[]>('/uniswap/tokens'),
 
+  // Summarize
+  summarize: (channelId: string, userAddress: string, userInterests: string[]) =>
+    request<any>('/summarize', {
+      method: 'POST',
+      body: JSON.stringify({ channelId, userAddress, userInterests })
+    }),
+
   // Polls
   createPoll: (channelId: string, question: string, options: string[]) =>
     request<any>('/poll', {

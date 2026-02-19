@@ -1,12 +1,14 @@
 <script lang="ts">
   import { chat } from '$lib/stores/chat.svelte';
   import { wallet } from '$lib/stores/wallet.svelte';
-  import { onMount, tick } from 'svelte';
+  import { twin } from '$lib/stores/twin.svelte';
+  import { tick } from 'svelte';
   import { api } from '$lib/utils/api';
   import MessageBubble from './MessageBubble.svelte';
   import MessageInput from './MessageInput.svelte';
 
   let messagesContainer: HTMLDivElement;
+  let summarizing = $state(false);
 
   async function scrollToBottom() {
     await tick();
@@ -32,6 +34,27 @@
     chat.messages; // track
     scrollToBottom();
   });
+
+  async function catchMeUp() {
+    if (!wallet.address) return;
+    summarizing = true;
+    try {
+      const summary = await api.summarize(
+        chat.activeChannel,
+        wallet.address,
+        twin.config?.interests ?? []
+      );
+      // Post the summary as a local message
+      chat.sendMessage(JSON.stringify({
+        ...summary,
+        channelId: chat.activeChannel
+      }), 'summary');
+    } catch (err) {
+      console.error('Summarize failed:', err);
+    } finally {
+      summarizing = false;
+    }
+  }
 </script>
 
 <div class="flex flex-col h-full">
@@ -45,8 +68,17 @@
         {chat.channels.find(c => c.id === chat.activeChannel)?.description ?? ''}
       </p>
     </div>
-    <div class="flex items-center gap-2 text-xs text-text-muted">
-      <span>{chat.members.length} online</span>
+    <div class="flex items-center gap-3">
+      <button
+        onclick={catchMeUp}
+        disabled={summarizing || chat.messages.length === 0}
+        class="px-3 py-1 text-xs border border-twin/40 text-twin rounded-md
+               hover:bg-twin/10 transition-colors
+               disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        {summarizing ? 'Summarizing...' : 'Catch me up'}
+      </button>
+      <span class="text-xs text-text-muted">{chat.members.length} online</span>
     </div>
   </div>
 
