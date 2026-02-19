@@ -6,17 +6,7 @@
   function handleSend() {
     const content = inputValue.trim();
     if (!content) return;
-
-    // Check for slash commands
-    if (content.startsWith('/swap ')) {
-      chat.sendMessage(content, 'text');
-    } else if (content.startsWith('/price ')) {
-      chat.sendMessage(content, 'text');
-    } else if (content.startsWith('/poll ')) {
-      chat.sendMessage(content, 'text');
-    } else {
-      chat.sendMessage(content);
-    }
+    chat.sendMessage(content, content.startsWith('/') ? 'text' : undefined);
     inputValue = '';
   }
 
@@ -28,33 +18,28 @@
   }
 </script>
 
-<div class="border-t border-border bg-bg-surface p-3">
+<div class="border-t border-border bg-bg-surface px-3 py-2">
   <div class="flex items-end gap-2">
-    <div class="flex-1 relative">
-      <textarea
-        bind:value={inputValue}
-        onkeydown={handleKeydown}
-        placeholder="Message #{chat.activeChannel}... (try /swap ETH USDC 0.01)"
-        rows="1"
-        class="w-full bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm
-               text-text-primary placeholder:text-text-muted
-               focus:outline-none focus:border-accent/50 resize-none
-               transition-colors"
-      ></textarea>
-    </div>
+    <textarea
+      bind:value={inputValue}
+      onkeydown={handleKeydown}
+      placeholder="Message #{chat.activeChannel}..."
+      rows="1"
+      class="flex-1 bg-bg-elevated border border-border rounded-full px-4 py-2 text-sm
+             text-text-primary placeholder:text-text-muted
+             focus:outline-none focus:border-text-muted resize-none"
+    ></textarea>
     <button
       onclick={handleSend}
       disabled={!inputValue.trim()}
-      class="px-4 py-2 bg-accent/10 border border-accent/40 text-accent rounded-md text-sm font-medium
-             hover:bg-accent hover:text-bg transition-colors
-             disabled:opacity-30 disabled:cursor-not-allowed"
+      class="p-2 rounded-full transition-colors flex-shrink-0
+             {inputValue.trim()
+               ? 'bg-text-primary text-bg'
+               : 'bg-bg-elevated text-text-muted border border-border'}"
     >
-      Send
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
+      </svg>
     </button>
-  </div>
-  <div class="flex gap-3 mt-1.5 text-[10px] text-text-muted">
-    <span>/swap TOKEN TOKEN AMT</span>
-    <span>/price TOKEN</span>
-    <span>/poll "Question?" Option1, Option2</span>
   </div>
 </div>

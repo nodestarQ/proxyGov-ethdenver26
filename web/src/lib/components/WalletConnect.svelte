@@ -6,17 +6,17 @@
 {#if wallet.connected}
   <button
     onclick={() => wallet.disconnect()}
-    class="flex items-center gap-2 px-3 py-1.5 border border-border rounded-md
-           hover:bg-bg-hover transition-colors font-mono text-sm text-text-primary"
+    class="flex items-center gap-1.5 px-2.5 py-1 border border-border rounded-full
+           hover:bg-bg-hover transition-colors text-xs text-text-primary"
   >
-    <span class="w-2 h-2 rounded-full bg-text-primary animate-pulse"></span>
-    {truncateAddress(wallet.address!)}
+    <span class="w-1.5 h-1.5 rounded-full bg-text-primary"></span>
+    <span class="font-mono">{truncateAddress(wallet.address!)}</span>
   </button>
 {:else}
   <button
     onclick={() => wallet.connect()}
     disabled={wallet.connecting}
-    class="px-4 py-2 border border-border text-text-primary rounded-md font-medium
+    class="px-4 py-2 border border-border text-text-primary rounded-full font-medium text-sm
            hover:bg-bg-hover transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed"
   >

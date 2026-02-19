@@ -1,5 +1,1 @@
-<script lang="ts">
-  import ChatWindow from '$lib/components/ChatWindow.svelte';
-</script>
-
-<ChatWindow />
+<!-- Navigation handled by layout screen state -->
