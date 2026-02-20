@@ -16,7 +16,7 @@ interface MessageForSummary {
 
 export async function summarizeConversation(
   messages: MessageForSummary[],
-  userInterests: string[],
+  userInterests: string | string[],
   channelId: string
 ): Promise<{
   summary: string;
@@ -33,7 +33,7 @@ export async function summarizeConversation(
   const response = await getClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
-    system: `You summarize DAO chat conversations. The user's interests are: ${userInterests.join(', ') || 'general governance'}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
+    system: `You summarize DAO chat conversations. The user's interests are: ${Array.isArray(userInterests) ? userInterests.join(', ') : userInterests || 'general governance'}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
 {
   "summary": "2-3 sentence summary",
   "keyTopics": ["topic1", "topic2"],

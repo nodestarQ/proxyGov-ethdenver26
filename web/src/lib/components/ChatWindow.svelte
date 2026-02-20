@@ -45,7 +45,7 @@
       const summary = await api.summarize(
         chat.activeChannel,
         wallet.address,
-        twin.config?.interests ?? []
+        twin.config?.interests ?? ''
       );
       chat.sendMessage(JSON.stringify({
         ...summary,

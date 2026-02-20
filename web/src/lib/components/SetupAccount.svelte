@@ -30,9 +30,9 @@
 
   // Twin step
   let personality = $state('');
-  let interestInput = $state('');
-  let interests = $state<string[]>([]);
-  let responseStyle = $state<'concise' | 'detailed' | 'casual'>('concise');
+  let interests = $state('');
+  let responseStyle = $state('');
+  const canSubmitTwin = $derived(personality.trim() !== '' && interests.trim() !== '' && responseStyle.trim() !== '');
 
   function selectAvatar(emoji: string) {
     selectedAvatar = emoji;
@@ -78,19 +78,6 @@
     } finally {
       saving = false;
     }
-  }
-
-  function addInterest() {
-    const val = interestInput.trim();
-    if (!val) return;
-    if (!interests.includes(val)) {
-      interests = [...interests, val];
-    }
-    interestInput = '';
-  }
-
-  function removeInterest(interest: string) {
-    interests = interests.filter(i => i !== interest);
   }
 
   async function handleTwinSave() {
@@ -235,48 +222,28 @@
       <div class="crt-border rounded-md p-4 bg-bg-surface">
         <label class="block text-sm font-medium text-text-primary mb-1">Interests</label>
         <p class="text-xs text-text-muted mb-2">Topics you care about - your twin will pay attention to these</p>
-        <div class="flex gap-2 mb-2">
-          <input
-            bind:value={interestInput}
-            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addInterest(); } }}
-            placeholder="Add interest..."
-            class="flex-1 bg-bg-elevated border border-border rounded-md px-3 py-1.5 text-sm
-                   text-text-primary placeholder:text-text-muted
-                   focus:outline-none focus:border-accent/50"
-          />
-          <button onclick={addInterest} class="px-3 py-1.5 border border-border text-text-primary rounded-md text-sm hover:bg-bg-hover transition-colors">
-            Add
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-1.5">
-          {#each interests as interest}
-            <button
-              onclick={() => removeInterest(interest)}
-              class="text-xs px-2 py-0.5 rounded-full bg-bg-elevated text-text-secondary border border-border hover:bg-danger/10 hover:text-danger hover:border-danger/30 transition-colors"
-            >
-              {interest} x
-            </button>
-          {/each}
-        </div>
+        <textarea
+          bind:value={interests}
+          placeholder="e.g., ETH price action, governance proposals, DeFi yields, layer 2 scaling"
+          rows="3"
+          class="w-full bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm
+                 text-text-primary placeholder:text-text-muted
+                 focus:outline-none focus:border-accent/50 resize-none"
+        ></textarea>
       </div>
 
       <!-- Response Style -->
       <div class="crt-border rounded-md p-4 bg-bg-surface">
         <label class="block text-sm font-medium text-text-primary mb-1">Response Style</label>
         <p class="text-xs text-text-muted mb-2">How should your twin talk?</p>
-        <div class="flex gap-2">
-          {#each ['concise', 'detailed', 'casual'] as style}
-            <button
-              onclick={() => responseStyle = style as any}
-              class="flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors
-                     {responseStyle === style
-                       ? 'border-text-primary bg-text-primary/10 text-text-primary font-medium'
-                       : 'border-border text-text-secondary hover:border-text-muted'}"
-            >
-              {style}
-            </button>
-          {/each}
-        </div>
+        <textarea
+          bind:value={responseStyle}
+          placeholder="e.g., Keep it short and data-driven. No fluff, just facts and numbers."
+          rows="3"
+          class="w-full bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm
+                 text-text-primary placeholder:text-text-muted
+                 focus:outline-none focus:border-accent/50 resize-none"
+        ></textarea>
       </div>
 
       {#if error}
@@ -288,9 +255,9 @@
     <div class="p-4 border-t border-border bg-bg-surface space-y-2">
       <button
         onclick={handleTwinSave}
-        disabled={saving}
+        disabled={!canSubmitTwin || saving}
         class="w-full py-2.5 rounded-lg font-medium text-sm transition-colors
-               {!saving
+               {canSubmitTwin && !saving
                  ? 'bg-text-primary text-bg hover:opacity-90'
                  : 'bg-bg-elevated text-text-muted border border-border cursor-not-allowed'}"
       >

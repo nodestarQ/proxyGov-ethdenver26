@@ -38,8 +38,8 @@ export const twinConfigs = sqliteTable('twin_configs', {
   ownerAddress: text('owner_address').primaryKey().references(() => users.address),
   enabled: integer('enabled', { mode: 'boolean' }).default(false).notNull(),
   personality: text('personality').default('').notNull(),
-  interests: text('interests').default('[]').notNull(), // JSON array
-  responseStyle: text('response_style', { enum: ['concise', 'detailed', 'casual'] }).default('concise').notNull(),
+  interests: text('interests').default('').notNull(),
+  responseStyle: text('response_style').default('').notNull(),
   maxSwapSizeEth: real('max_swap_size_eth').default(0.1).notNull(),
   autoSummarize: integer('auto_summarize', { mode: 'boolean' }).default(true).notNull(),
   createdAt: text('created_at').notNull(),

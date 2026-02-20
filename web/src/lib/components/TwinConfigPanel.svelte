@@ -7,22 +7,6 @@
   }
   let { onBack }: Props = $props();
 
-  let interestInput = $state('');
-
-  function addInterest() {
-    const val = interestInput.trim();
-    if (!val || !twin.config) return;
-    if (!twin.config.interests.includes(val)) {
-      twin.updateField('interests', [...twin.config.interests, val]);
-    }
-    interestInput = '';
-  }
-
-  function removeInterest(interest: string) {
-    if (!twin.config) return;
-    twin.updateField('interests', twin.config.interests.filter(i => i !== interest));
-  }
-
   function handleSave() {
     if (wallet.address) {
       twin.save(wallet.address);
@@ -85,48 +69,31 @@
       <!-- Interests -->
       <div class="crt-border rounded-md p-4 bg-bg-surface">
         <label class="block text-sm font-medium text-text-primary mb-1">Interests</label>
-        <p class="text-xs text-text-muted mb-2">Keywords your twin responds to</p>
-        <div class="flex gap-2 mb-2">
-          <input
-            bind:value={interestInput}
-            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addInterest(); } }}
-            placeholder="Add interest..."
-            class="flex-1 bg-bg-elevated border border-border rounded-md px-3 py-1.5 text-sm
-                   text-text-primary placeholder:text-text-muted
-                   focus:outline-none focus:border-accent/50"
-          />
-          <button onclick={addInterest} class="px-3 py-1.5 border border-border text-text-primary rounded-md text-sm hover:bg-bg-hover transition-colors">
-            Add
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-1.5">
-          {#each twin.config.interests as interest}
-            <button
-              onclick={() => removeInterest(interest)}
-              class="text-xs px-2 py-0.5 rounded-full bg-bg-elevated text-text-secondary border border-border hover:bg-danger/10 hover:text-danger hover:border-danger/30 transition-colors"
-            >
-              {interest} x
-            </button>
-          {/each}
-        </div>
+        <p class="text-xs text-text-muted mb-2">Topics your twin pays attention to</p>
+        <textarea
+          value={twin.config.interests}
+          oninput={(e) => twin.updateField('interests', (e.target as HTMLTextAreaElement).value)}
+          placeholder="e.g., ETH price action, governance proposals, DeFi yields, layer 2 scaling"
+          rows="3"
+          class="w-full bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm
+                 text-text-primary placeholder:text-text-muted
+                 focus:outline-none focus:border-accent/50 resize-none"
+        ></textarea>
       </div>
 
       <!-- Response Style -->
       <div class="crt-border rounded-md p-4 bg-bg-surface">
-        <label class="block text-sm font-medium text-text-primary mb-2">Response Style</label>
-        <div class="flex gap-2">
-          {#each ['concise', 'detailed', 'casual'] as style}
-            <button
-              onclick={() => twin.updateField('responseStyle', style as any)}
-              class="flex-1 px-3 py-1.5 rounded-md text-sm border transition-colors
-                     {twin.config.responseStyle === style
-                       ? 'border-text-primary bg-text-primary/10 text-text-primary font-medium'
-                       : 'border-border text-text-secondary hover:border-text-muted'}"
-            >
-              {style}
-            </button>
-          {/each}
-        </div>
+        <label class="block text-sm font-medium text-text-primary mb-1">Response Style</label>
+        <p class="text-xs text-text-muted mb-2">How should your twin talk?</p>
+        <textarea
+          value={twin.config.responseStyle}
+          oninput={(e) => twin.updateField('responseStyle', (e.target as HTMLTextAreaElement).value)}
+          placeholder="e.g., Keep it short and data-driven. No fluff, just facts and numbers."
+          rows="3"
+          class="w-full bg-bg-elevated border border-border rounded-md px-3 py-2 text-sm
+                 text-text-primary placeholder:text-text-muted
+                 focus:outline-none focus:border-accent/50 resize-none"
+        ></textarea>
       </div>
 
       <!-- Max Swap Size -->

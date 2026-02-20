@@ -23,7 +23,7 @@ export interface Opportunity {
 
 export async function analyzeForOpportunities(
   messages: MessageForAnalysis[],
-  userInterests: string[]
+  userInterests: string | string[]
 ): Promise<Opportunity[]> {
   const conversationText = messages
     .map(m => `[${m.sender}]: ${m.content}`)
@@ -32,7 +32,7 @@ export async function analyzeForOpportunities(
   const response = await getClient().messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
-    system: `You analyze DAO chat messages for opportunities relevant to a member with these interests: ${userInterests.join(', ') || 'DeFi, governance'}.
+    system: `You analyze DAO chat messages for opportunities relevant to a member with these interests: ${Array.isArray(userInterests) ? userInterests.join(', ') : userInterests || 'DeFi, governance'}.
 
 Look for:
 - DeFi opportunities (swaps, yield, liquidity)

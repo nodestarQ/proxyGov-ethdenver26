@@ -51,11 +51,12 @@
   <!-- Channel List -->
   <div class="flex-1 overflow-y-auto">
     <p class="text-[11px] text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Channels</p>
+    <div class="px-3 space-y-2">
     {#each chat.channels as channel}
       <button
         onclick={() => onSelectChannel(channel.id)}
         class="w-full text-left px-4 py-3 flex items-center justify-between
-               border-b border-border/30
+               rounded-xl bg-bg-surface border border-border/30
                hover:bg-bg-hover active:bg-bg-elevated transition-colors"
       >
         <div>
@@ -78,6 +79,7 @@
         </div>
       </button>
     {/each}
+    </div>
 
     <!-- Online Members -->
     <p class="text-[11px] text-text-muted uppercase tracking-wider px-4 pt-5 pb-2">

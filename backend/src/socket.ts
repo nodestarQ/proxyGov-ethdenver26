@@ -357,7 +357,7 @@ async function checkTwinResponses(
             sender: message.senderName,
             twinConfig: {
               ...twinConfig,
-              interests: JSON.parse(twinConfig.interests)
+              interests: twinConfig.interests
             },
             recentMessages: recentMsgs.map(m => ({
               sender: m.senderName,

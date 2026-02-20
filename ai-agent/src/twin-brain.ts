@@ -9,8 +9,8 @@ function getClient() {
 interface TwinConfig {
   ownerAddress: string;
   personality: string;
-  interests: string[];
-  responseStyle: 'concise' | 'detailed' | 'casual';
+  interests: string;
+  responseStyle: string;
   maxSwapSizeEth: number;
 }
 
@@ -26,12 +26,9 @@ export function buildSystemPrompt(config: TwinConfig, context: { channelId: stri
 
 PERSONALITY: ${config.personality || 'Helpful and engaged DAO participant.'}
 
-INTERESTS: ${config.interests.length > 0 ? config.interests.join(', ') : 'General DAO governance'}
+INTERESTS: ${config.interests || 'General DAO governance'}
 
-RESPONSE STYLE: ${config.responseStyle}
-${config.responseStyle === 'concise' ? '- Keep responses to 1-2 sentences max.' : ''}
-${config.responseStyle === 'detailed' ? '- Provide thorough analysis and reasoning.' : ''}
-${config.responseStyle === 'casual' ? '- Be conversational and friendly, use informal language.' : ''}
+RESPONSE STYLE: ${config.responseStyle || 'Keep it concise and helpful.'}
 
 RULES:
 - You are a proxy for your owner who is currently away.
@@ -58,10 +55,13 @@ export function shouldRespond(
     return true;
   }
 
-  // Matches interest keywords
-  for (const interest of config.interests) {
-    if (content.includes(interest.toLowerCase())) {
-      return true;
+  // Matches interest keywords (split free-text on commas/spaces)
+  if (config.interests) {
+    const keywords = config.interests.split(/[,\s]+/).filter(k => k.length > 2);
+    for (const keyword of keywords) {
+      if (content.includes(keyword.toLowerCase())) {
+        return true;
+      }
     }
   }
 

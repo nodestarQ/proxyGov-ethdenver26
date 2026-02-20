@@ -16,7 +16,6 @@ router.get('/twin/:address', (req, res) => {
 
   res.json({
     ...config,
-    interests: JSON.parse(config.interests),
     enabled: Boolean(config.enabled),
     autoSummarize: Boolean(config.autoSummarize)
   });
@@ -33,8 +32,8 @@ router.put('/twin/:address', (req, res) => {
     ownerAddress: address,
     enabled: body.enabled ?? false,
     personality: body.personality ?? '',
-    interests: JSON.stringify(body.interests ?? []),
-    responseStyle: body.responseStyle ?? 'concise',
+    interests: body.interests ?? '',
+    responseStyle: body.responseStyle ?? '',
     maxSwapSizeEth: body.maxSwapSizeEth ?? 0.1,
     autoSummarize: body.autoSummarize ?? true,
     updatedAt: now
@@ -51,7 +50,6 @@ router.put('/twin/:address', (req, res) => {
 
   res.json({
     ...data,
-    interests: body.interests ?? [],
     createdAt: existing?.createdAt ?? now
   });
 });

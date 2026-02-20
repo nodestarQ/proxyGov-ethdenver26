@@ -58,7 +58,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 1. **Landing** - wallet connect (SIWE), shown when not connected
 2. **Setup Account** (2-step onboarding, first-time users):
    - Step 1: avatar (emoji grid or upload) + username
-   - Step 2: personality, interests, response style for AI twin (skip available)
+   - Step 2: personality, interests, response style as free-text fields for AI twin (skip available)
 3. **Channel List** - channel rows with unread badges, online members, twin toggle, profile avatar → settings
 4. **Chat** - back button, channel header, message bubbles (Signal-style, own=right/dark, others=left/light), rounded pill input with send button
 5. **Twin Config** - enable toggle, personality, interests, response style, max swap size

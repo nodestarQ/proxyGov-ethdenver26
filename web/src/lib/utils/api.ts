@@ -42,7 +42,7 @@ export const api = {
     request<any[]>('/uniswap/tokens'),
 
   // Summarize
-  summarize: (channelId: string, userAddress: string, userInterests: string[]) =>
+  summarize: (channelId: string, userAddress: string, userInterests: string) =>
     request<any>('/summarize', {
       method: 'POST',
       body: JSON.stringify({ channelId, userAddress, userInterests })

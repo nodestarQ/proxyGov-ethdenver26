@@ -38,8 +38,8 @@ export interface TwinConfig {
   ownerAddress: string;
   enabled: boolean;
   personality: string;     // free-text personality description
-  interests: string[];     // topic keywords
-  responseStyle: 'concise' | 'detailed' | 'casual';
+  interests: string;       // free-text interests/topics
+  responseStyle: string;   // free-text response style
   maxSwapSizeEth: number;  // max swap twin can propose
   autoSummarize: boolean;
   createdAt: string;
