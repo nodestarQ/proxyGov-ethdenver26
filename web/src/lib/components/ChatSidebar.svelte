@@ -37,7 +37,7 @@
   <!-- Members -->
   <div class="border-t border-border p-3">
     <p class="text-xs text-text-muted uppercase tracking-wider mb-2 px-1">
-      Online — {chat.members.length}
+      Online - {chat.members.length}
     </p>
     <div class="space-y-1 max-h-32 overflow-y-auto">
       {#each chat.members as member}

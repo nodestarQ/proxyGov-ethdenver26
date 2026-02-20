@@ -2,7 +2,7 @@ const UNISWAP_API_URL = process.env.UNISWAP_API_URL || 'https://trading-api-labs
 const UNISWAP_API_KEY = process.env.UNISWAP_API_KEY || '';
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '11155111');
 
-// Token addresses — Sepolia defaults
+// Token addresses - Sepolia defaults
 const TOKEN_MAP: Record<string, { address: string; decimals: number }> = {
   ETH:  { address: '0x0000000000000000000000000000000000000000', decimals: 18 },
   WETH: { address: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14', decimals: 18 },

@@ -234,7 +234,7 @@
       <!-- Interests -->
       <div class="crt-border rounded-md p-4 bg-bg-surface">
         <label class="block text-sm font-medium text-text-primary mb-1">Interests</label>
-        <p class="text-xs text-text-muted mb-2">Topics you care about — your twin will pay attention to these</p>
+        <p class="text-xs text-text-muted mb-2">Topics you care about - your twin will pay attention to these</p>
         <div class="flex gap-2 mb-2">
           <input
             bind:value={interestInput}

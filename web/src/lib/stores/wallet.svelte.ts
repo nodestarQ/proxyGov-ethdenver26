@@ -54,7 +54,7 @@ export const wallet = {
           params: [{ chainId: '0xaa36a7' }] // 11155111 in hex
         });
       } catch (switchError: any) {
-        // Chain not added — add it
+        // Chain not added - add it
         if (switchError.code === 4902) {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',

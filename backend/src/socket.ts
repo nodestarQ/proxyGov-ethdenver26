@@ -67,7 +67,7 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
 
       userAddress = address;
 
-      // Upsert user — use saved display name if profile exists, else generate one
+      // Upsert user - use saved display name if profile exists, else generate one
       const now = new Date().toISOString();
       const existing = db.select().from(users).where(eq(users.address, address)).get();
       const displayName = existing?.displayName ?? generateDisplayName(address);
@@ -148,7 +148,7 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       // Broadcast to channel
       io.to(channelId).emit('message:new', msg);
 
-      // Check for slash commands — backend processes them
+      // Check for slash commands - backend processes them
       if (content.startsWith('/')) {
         await handleSlashCommand(io, channelId, userAddress, content);
       }
@@ -393,7 +393,7 @@ async function checkTwinResponses(
           }, 1500 + Math.random() * 2000);
         }
       } catch {
-        // AI agent not running — skip
+        // AI agent not running - skip
       }
     }
   } catch (err) {

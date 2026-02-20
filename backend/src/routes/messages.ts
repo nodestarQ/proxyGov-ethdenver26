@@ -25,7 +25,7 @@ router.get('/messages', (req, res) => {
   res.json(result);
 });
 
-// Summarize endpoint — proxies to AI agent
+// Summarize endpoint - proxies to AI agent
 router.post('/summarize', async (req, res) => {
   const { channelId, userAddress, userInterests } = req.body;
   if (!channelId) {

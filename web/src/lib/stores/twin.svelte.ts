@@ -30,7 +30,7 @@ export const twin = {
     try {
       state.config = await api.getTwinConfig(address);
     } catch {
-      // No config yet — use defaults
+      // No config yet - use defaults
       state.config = {
         ownerAddress: address,
         enabled: false,
