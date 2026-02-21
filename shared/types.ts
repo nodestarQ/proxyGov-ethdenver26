@@ -40,7 +40,7 @@ export interface TwinConfig {
   personality: string;     // free-text personality description
   interests: string;       // free-text interests/topics
   responseStyle: string;   // free-text response style
-  maxSwapSizeEth: number;  // max swap twin can propose
+  autonomousCapUsd: number; // max USD value twin can act on autonomously
   autoSummarize: boolean;
   createdAt: string;
   updatedAt: string;

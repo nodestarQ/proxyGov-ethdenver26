@@ -37,7 +37,7 @@ export const twin = {
         personality: '',
         interests: '',
         responseStyle: '',
-        maxSwapSizeEth: 0.1,
+        autonomousCapUsd: 100,
         autoSummarize: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

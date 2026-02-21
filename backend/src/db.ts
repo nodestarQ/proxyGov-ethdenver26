@@ -51,7 +51,7 @@ export function initDb() {
       personality TEXT NOT NULL DEFAULT '',
       interests TEXT NOT NULL DEFAULT '',
       response_style TEXT NOT NULL DEFAULT '',
-      max_swap_size_eth REAL NOT NULL DEFAULT 0.1,
+      autonomous_cap_usd REAL NOT NULL DEFAULT 100,
       auto_summarize INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
@@ -113,9 +113,9 @@ function seedDemoData(sqlite: Database.Database, now: string) {
   }
 
   // Seed twin config for NeonVoter
-  const twinStmt = sqlite.prepare('INSERT OR IGNORE INTO twin_configs (owner_address, enabled, personality, interests, response_style, max_swap_size_eth, auto_summarize, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
-  twinStmt.run(users[0].address, 1, 'Analytical DeFi enthusiast. Skeptical of hype, focuses on fundamentals.', 'ETH, UNI, yield farming, governance proposals', 'Concise and data-driven. Short replies, focus on facts.', 0.5, 1, now, now);
-  twinStmt.run(users[2].address, 1, 'Degen energy. Always looking for alpha. Quick to jump on trends.', 'Alpha plays, NFTs, airdrops, memecoins', 'Casual and hyped. Uses slang, keeps it fun.', 0.1, 1, now, now);
+  const twinStmt = sqlite.prepare('INSERT OR IGNORE INTO twin_configs (owner_address, enabled, personality, interests, response_style, autonomous_cap_usd, auto_summarize, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  twinStmt.run(users[0].address, 1, 'Analytical DeFi enthusiast. Skeptical of hype, focuses on fundamentals.', 'ETH, UNI, yield farming, governance proposals', 'Concise and data-driven. Short replies, focus on facts.', 500, 1, now, now);
+  twinStmt.run(users[2].address, 1, 'Degen energy. Always looking for alpha. Quick to jump on trends.', 'Alpha plays, NFTs, airdrops, memecoins', 'Casual and hyped. Uses slang, keeps it fun.', 100, 1, now, now);
 
   // Seed conversation in #general
   const msgStmt = sqlite.prepare('INSERT INTO messages (id, channel_id, sender, sender_name, is_twin, type, content, reactions, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');

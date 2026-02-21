@@ -1,6 +1,6 @@
 # proxyGov - ETHDenver 2026 BUIDLathon
 
-DAO coordination chat app where each member has a human presence + an AI twin that stays active when the human is away.
+DAO coordination chat app where each member has a human presence + a Twin (AI representation) that stays active when the human is away. The Twin follows conversations, responds on the user's behalf based on their personality/interests, and can autonomously sign off on DAO proposals (e.g. treasury swaps requiring multisig approval) within a user-defined spending cap.
 
 ## Project Structure
 
@@ -57,12 +57,12 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 **Screens:**
 1. **Landing** - wallet connect (SIWE), shown when not connected
 2. **Setup Account** (2-step onboarding, first-time users):
-   - Step 1: avatar (emoji grid or upload) + username
-   - Step 2: personality, interests, response style as free-text fields for AI twin (skip available)
-3. **Channel List** - channel rows with unread badges, online members, twin toggle, profile avatar → settings
+   - Step 1: avatar (upload or initials placeholder) + username
+   - Step 2: personality, interests, response style as free-text fields for Twin (skip available)
+3. **Channel List** - channel rows with unread badges, per-channel "Catch up" button (inline accordion with private rolling summary), online members, twin toggle, profile avatar → settings
 4. **Chat** - back button, channel header, message bubbles (Signal-style, own=right/dark, others=left/light), rounded pill input with send button
-5. **Twin Config** - enable toggle, personality, interests, response style, max swap size
-6. **Settings** - edit avatar + username, save changes, logout (danger color)
+5. **Twin Config** - dismissable explainer, enable toggle, personality, interests, response style, autonomous cap (USD)
+6. **Settings** - edit avatar (upload or initials placeholder) + username, save changes, logout (danger color)
 
 **Design tokens** (Tailwind v4 `@theme` in `web/src/app.css`):
 - Light mode: bg `#d4ded1`, surface `#c8d4c5`, text/border/accent `#0d0d0d`
@@ -80,21 +80,22 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 5. Rejects and disconnects on failure
 
 **Profile setup:**
-- After SIWE, `GET /api/user/:address` checks if profile exists (`avatarUrl` = setup complete)
+- After SIWE, `GET /api/user/:address` checks if profile exists (`displayName` = setup complete)
 - New users see the 2-step setup flow, returning users go straight to channels
-- Profile stored via `PUT /api/user/:address` (displayName, avatarUrl as base64 data URL or emoji)
+- Profile stored via `PUT /api/user/:address` (displayName, avatarUrl as optional base64 data URL)
+- Avatar is optional; initials placeholder shown when no photo uploaded
 
 ## Stores (Svelte 5 runes)
 
 - `wallet.svelte.ts` - address, connected, chainId, signature, siweMessage
-- `chat.svelte.ts` - messages, channels, activeChannel, members, unreadCounts, viewingChat flag
+- `chat.svelte.ts` - messages, channels, activeChannel, members, unreadCounts, viewingChat flag, catchUpSummaries/Loading/Expanded (per-channel rolling context)
 - `twin.svelte.ts` - twin config, load/save/updateField
 - `profile.svelte.ts` - displayName, avatarUrl (set on login, updated from settings)
 
 ## API Routes (Backend)
 
 - `GET /api/messages?channelId=` - fetch channel messages
-- `POST /api/summarize` - proxy to AI agent for conversation summary
+- `POST /api/summarize` - rolling context summarize (per-user, builds on previous context, returns `isUpToDate` when no new messages)
 - `GET/PUT /api/twin/:address` - twin config CRUD (upsert)
 - `GET /api/user/:address` - check profile existence
 - `PUT /api/user/:address` - update displayName + avatarUrl (2MB body limit)
@@ -124,7 +125,7 @@ All channels are joined on connect (not just active) so unread counts work acros
 ## Environment
 
 Copy `.env.example` to `.env` and fill in:
-- `ANTHROPIC_API_KEY` - required for AI twin to work
+- `ANTHROPIC_API_KEY` - required for Twin to work
 - `UNISWAP_API_KEY` - optional, falls back to mock quotes
 
 ## Bounties

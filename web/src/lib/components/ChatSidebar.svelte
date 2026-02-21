@@ -59,7 +59,7 @@
       class="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm
              border border-twin/30 text-twin hover:bg-twin/10 transition-colors"
     >
-      <span>AI Twin</span>
+      <span>Twin</span>
       <TwinStatusBadge active={twin.enabled} />
     </button>
   </div>

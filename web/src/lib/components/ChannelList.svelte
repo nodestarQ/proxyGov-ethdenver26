@@ -5,6 +5,7 @@
   import { profile } from '$lib/stores/profile.svelte';
   import { api } from '$lib/utils/api';
   import { truncateAddress } from '$lib/utils/format';
+  import { slide } from 'svelte/transition';
   import TwinStatusBadge from './TwinStatusBadge.svelte';
   import SummaryCard from './SummaryCard.svelte';
 
@@ -134,7 +135,7 @@
         <!-- Accordion: summary card -->
         {#if chat.catchUpExpanded[channel.id] && chat.catchUpSummaries[channel.id]}
           {@const summary = chat.catchUpSummaries[channel.id]!}
-          <div class="px-3 pb-3 border-t border-border/20">
+          <div transition:slide={{ duration: 200 }} class="px-3 pb-3 border-t border-border/20">
             {#if summary.isUpToDate}
               <div class="mt-2 text-center py-3">
                 <p class="text-xs text-text-muted">You're all caught up</p>
@@ -180,10 +181,8 @@
              border border-twin/30 text-twin hover:bg-twin/10 transition-colors"
     >
       <div class="flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714a2.25 2.25 0 0 0 .659 1.591L19 14.5M14.25 3.104c.251.023.501.05.75.082M19 14.5l-2.47 2.47a2.25 2.25 0 0 1-1.59.659H9.06a2.25 2.25 0 0 1-1.591-.659L5 14.5m14 0V17a2.25 2.25 0 0 1-2.25 2.25H7.25A2.25 2.25 0 0 1 5 17v-2.5" />
-        </svg>
-        <span class="text-sm font-medium">AI Twin</span>
+        <span class="text-base">🤖</span>
+        <span class="text-sm font-medium">Twin</span>
       </div>
       <TwinStatusBadge active={twin.enabled} />
     </button>

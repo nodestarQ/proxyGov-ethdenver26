@@ -85,7 +85,7 @@
         personality,
         interests,
         responseStyle,
-        maxSwapSizeEth: 0.1,
+        autonomousCapUsd: 100,
         autoSummarize: true
       });
       onComplete(username.trim(), avatarPreview);
@@ -107,7 +107,7 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-sm font-semibold text-text-primary">
-          {step === 'profile' ? 'Set up your profile' : 'Your AI Twin'}
+          {step === 'profile' ? 'Set up your profile' : 'Your Twin'}
         </h1>
         <p class="text-[11px] text-text-muted">{truncateAddress(wallet.address!)}</p>
       </div>
@@ -175,7 +175,7 @@
     <div class="flex-1 overflow-y-auto px-5 py-6 space-y-5">
       <div class="text-center px-2">
         <p class="text-sm text-text-primary font-medium">Tell us about yourself</p>
-        <p class="text-xs text-text-muted mt-1">This helps your AI Twin know how to represent you when you're away.</p>
+        <p class="text-xs text-text-muted mt-1">This helps your Twin know how to represent you when you're away.</p>
       </div>
 
       <!-- Personality -->

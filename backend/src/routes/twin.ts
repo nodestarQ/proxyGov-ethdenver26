@@ -34,7 +34,7 @@ router.put('/twin/:address', (req, res) => {
     personality: body.personality ?? '',
     interests: body.interests ?? '',
     responseStyle: body.responseStyle ?? '',
-    maxSwapSizeEth: body.maxSwapSizeEth ?? 0.1,
+    autonomousCapUsd: body.autonomousCapUsd ?? 100,
     autoSummarize: body.autoSummarize ?? true,
     updatedAt: now
   };
