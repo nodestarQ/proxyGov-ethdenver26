@@ -31,6 +31,16 @@ export const wallet = {
   get siweMessage() { return state.siweMessage; },
 
   async connect() {
+    if (import.meta.env.VITE_SKIP_AUTH === 'true') {
+      const devAddr = (import.meta.env.VITE_DEV_ADDRESS || '0x7192C4954f420381b08b5622D226c427A8FCdA4E') as Address;
+      state.address = devAddr;
+      state.signature = '0x0' as `0x${string}`;
+      state.siweMessage = `dev wants you to sign in...\n\nIssued At: ${new Date().toISOString()}`;
+      state.connected = true;
+      state.chainId = sepolia.id;
+      return;
+    }
+
     if (typeof window === 'undefined' || !window.ethereum) {
       state.error = 'MetaMask not detected';
       return;

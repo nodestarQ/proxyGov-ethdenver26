@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { v4 as uuid } from 'uuid';
 import { verifyMessage, type Address } from 'viem';
 import type { ServerToClientEvents, ClientToServerEvents, User, Message, SwapProposalPayload, SwapVote } from '../../shared/types.js';
-import { resolveTokenByAddress, checkDaoBalance, getQuote, getTokenPrice, executeSwap, getTokenAddress } from './uniswap.js';
+import { resolveTokenByAddress, resolveToken, checkDaoBalance, getDaoBalances, getQuote, getTokenPrice, executeSwap, getTokenAddress } from './uniswap.js';
 
 // Track connected sockets by address
 const connectedUsers = new Map<string, { socketId: string; displayName: string }>();
@@ -24,46 +24,48 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
     let userAddress: string | null = null;
 
     socket.on('user:authenticate', async ({ address, signature, message }) => {
-      // Verify SIWE signature
-      try {
-        const valid = await verifyMessage({
-          address: address as Address,
-          message,
-          signature: signature as `0x${string}`
-        });
-
-        if (!valid) {
-          console.warn(`[socket] SIWE verification failed for ${address.slice(0, 8)}...`);
-          socket.emit('message:new', {
-            id: uuid(),
-            channelId: 'general',
-            sender: 'system',
-            senderName: 'System',
-            isTwin: false,
-            type: 'system',
-            content: 'Signature verification failed. Please reconnect.',
-            signal: { up: [], down: [] },
-            timestamp: new Date().toISOString()
+      if (process.env.SKIP_AUTH !== 'true') {
+        // Verify SIWE signature
+        try {
+          const valid = await verifyMessage({
+            address: address as Address,
+            message,
+            signature: signature as `0x${string}`
           });
-          socket.disconnect(true);
-          return;
-        }
 
-        // Check timestamp freshness (5 min window)
-        const issuedAtMatch = message.match(/Issued At: (.+)$/m);
-        if (issuedAtMatch) {
-          const issuedAt = new Date(issuedAtMatch[1]).getTime();
-          const now = Date.now();
-          if (now - issuedAt > 5 * 60 * 1000) {
-            console.warn(`[socket] SIWE message expired for ${address.slice(0, 8)}...`);
+          if (!valid) {
+            console.warn(`[socket] SIWE verification failed for ${address.slice(0, 8)}...`);
+            socket.emit('message:new', {
+              id: uuid(),
+              channelId: 'general',
+              sender: 'system',
+              senderName: 'System',
+              isTwin: false,
+              type: 'system',
+              content: 'Signature verification failed. Please reconnect.',
+              signal: { up: [], down: [] },
+              timestamp: new Date().toISOString()
+            });
             socket.disconnect(true);
             return;
           }
+
+          // Check timestamp freshness (5 min window)
+          const issuedAtMatch = message.match(/Issued At: (.+)$/m);
+          if (issuedAtMatch) {
+            const issuedAt = new Date(issuedAtMatch[1]).getTime();
+            const now = Date.now();
+            if (now - issuedAt > 5 * 60 * 1000) {
+              console.warn(`[socket] SIWE message expired for ${address.slice(0, 8)}...`);
+              socket.disconnect(true);
+              return;
+            }
+          }
+        } catch (err) {
+          console.error(`[socket] SIWE verification error:`, err);
+          socket.disconnect(true);
+          return;
         }
-      } catch (err) {
-        console.error(`[socket] SIWE verification error:`, err);
-        socket.disconnect(true);
-        return;
       }
 
       userAddress = address;
@@ -98,7 +100,7 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       };
       io.emit('user:join', user);
 
-      console.log(`[socket] ${displayName} (${address.slice(0, 8)}...) SIWE verified & connected`);
+      console.log(`[socket] ${displayName} (${address.slice(0, 8)}...) ${process.env.SKIP_AUTH === 'true' ? 'dev auth (SKIP_AUTH)' : 'SIWE verified'} & connected`);
     });
 
     socket.on('channel:join', (channelId) => {
@@ -390,29 +392,31 @@ async function handleSlashCommand(
       db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
       io.to(channelId).emit('message:new', msg);
 
-      // Trigger twin auto-votes
-      await checkTwinSwapVotes(io, channelId, proposalId, amountInUsd);
+      // Trigger twin auto-votes lazily (don't block the response)
+      checkTwinSwapVotes(io, channelId, proposalId, amountInUsd).catch(err =>
+        console.error('[swap] Twin auto-vote error:', err)
+      );
     } catch (err) {
       console.error('[swap] Error creating swap proposal:', err);
       emitSystemMessage(io, channelId, 'Failed to create swap proposal. Please try again.');
     }
   } else if (command === '/swap' && parts.length >= 4) {
-    // Legacy: /swap ETH USDC 0.01 (symbol-based)
-    const [, tokenIn, tokenOut, amount] = parts;
+    // /swap <tokenIn> <amount> <tokenOut> — accepts symbols or addresses
+    const [, tokenIn, amount, tokenOut] = parts;
     try {
-      const tokenInInfo = getTokenAddress(tokenIn);
-      const tokenOutInfo = getTokenAddress(tokenOut);
+      const tokenInInfo = resolveToken(tokenIn);
+      const tokenOutInfo = resolveToken(tokenOut);
       if (!tokenInInfo || !tokenOutInfo) {
         emitSystemMessage(io, channelId, `Unknown token: ${!tokenInInfo ? tokenIn : tokenOut}`);
         return;
       }
 
-      const tokenPrice = await getTokenPrice(tokenIn);
+      const tokenPrice = await getTokenPrice(tokenInInfo.symbol);
       const amountInUsd = parseFloat(amount) * tokenPrice;
 
       let quote = null;
       try {
-        quote = await getQuote(tokenIn, tokenOut, amount);
+        quote = await getQuote(tokenInInfo.symbol, tokenOutInfo.symbol, amount);
       } catch (err) {
         console.warn('[swap] Quote failed:', err);
       }
@@ -434,8 +438,8 @@ async function handleSlashCommand(
         creatorName,
         tokenInAddress: tokenInInfo.address,
         tokenOutAddress: tokenOutInfo.address,
-        tokenInSymbol: tokenIn.toUpperCase(),
-        tokenOutSymbol: tokenOut.toUpperCase(),
+        tokenInSymbol: tokenInInfo.symbol,
+        tokenOutSymbol: tokenOutInfo.symbol,
         amountIn: amount,
         amountOut,
         amountInUsd,
@@ -448,8 +452,8 @@ async function handleSlashCommand(
 
       const proposalPayload: SwapProposalPayload = {
         proposalId,
-        tokenInSymbol: tokenIn.toUpperCase(),
-        tokenOutSymbol: tokenOut.toUpperCase(),
+        tokenInSymbol: tokenInInfo.symbol,
+        tokenOutSymbol: tokenOutInfo.symbol,
         tokenInAddress: tokenInInfo.address,
         tokenOutAddress: tokenOutInfo.address,
         amountIn: amount,
@@ -479,7 +483,10 @@ async function handleSlashCommand(
       db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
       io.to(channelId).emit('message:new', msg);
 
-      await checkTwinSwapVotes(io, channelId, proposalId, amountInUsd);
+      // Trigger twin auto-votes lazily (don't block the response)
+      checkTwinSwapVotes(io, channelId, proposalId, amountInUsd).catch(err =>
+        console.error('[swap] Twin auto-vote error:', err)
+      );
     } catch (err) {
       console.error('[swap] Error creating swap proposal:', err);
       emitSystemMessage(io, channelId, 'Failed to create swap proposal. Please try again.');
@@ -524,6 +531,16 @@ async function handleSlashCommand(
         db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
         io.to(channelId).emit('message:new', msg);
       }
+    }
+  } else if (command === '/daobalance') {
+    try {
+      const balances = await getDaoBalances();
+      const lines = balances.map(b => `${b.symbol}: ${b.balance}`);
+      const daoAddr = process.env.DAO_WALLET_ADDRESS ?? 'not configured';
+      emitSystemMessage(io, channelId, `DAO Treasury (${daoAddr.slice(0, 6)}...${daoAddr.slice(-4)}):\n${lines.join('\n')}`);
+    } catch (err) {
+      console.error('[balance] Error fetching balances:', err);
+      emitSystemMessage(io, channelId, 'Failed to fetch DAO balances.');
     }
   }
 }

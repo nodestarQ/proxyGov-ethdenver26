@@ -111,6 +111,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 - `/swap ETH USDC 0.01` - fetches Uniswap quote, renders SwapProposalCard
 - `/price ETH` - inline price display
 - `/poll "Question?" Option1, Option2` - creates poll card
+- `/daobalance` - shows DAO treasury balances (ETH, WETH, USDC, UNI)
 
 ## Socket.IO Events
 
@@ -129,6 +130,7 @@ All channels are joined on connect (not just active) so unread counts work acros
 Copy `.env.example` to `.env` and fill in:
 - `ANTHROPIC_API_KEY` - required for Twin to work
 - `UNISWAP_API_KEY` - optional, falls back to mock quotes
+- `SKIP_AUTH=true` + `VITE_SKIP_AUTH=true` + `VITE_DEV_ADDRESS=0x...` - skip MetaMask/SIWE in dev mode
 
 ## Bounties
 

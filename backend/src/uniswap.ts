@@ -2,14 +2,23 @@ import { createPublicClient, createWalletClient, http, parseEther, formatEther, 
 import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia, mainnet } from 'viem/chains';
 
-const UNISWAP_API_URL = process.env.UNISWAP_API_URL || 'https://trading-api-labs.interface.gateway.uniswap.org/v1';
-const UNISWAP_API_KEY = process.env.UNISWAP_API_KEY || '';
-const CHAIN_ID = parseInt(process.env.CHAIN_ID || '11155111');
-const DAO_WALLET_ADDRESS = process.env.DAO_WALLET_ADDRESS || '';
-const DAO_WALLET_PRIVATE_KEY = process.env.DAO_WALLET_PRIVATE_KEY || '';
+// Read env lazily so dotenv.config() in index.ts runs first
+const env = () => ({
+  UNISWAP_API_URL: process.env.UNISWAP_API_URL || 'https://trade-api.gateway.uniswap.org/v1',
+  UNISWAP_API_KEY: process.env.UNISWAP_API_KEY || '',
+  CHAIN_ID: parseInt(process.env.CHAIN_ID || '11155111'),
+  DAO_WALLET_ADDRESS: process.env.DAO_WALLET_ADDRESS || '',
+  DAO_WALLET_PRIVATE_KEY: process.env.DAO_WALLET_PRIVATE_KEY || '',
+});
 
-const chain = CHAIN_ID === 1 ? mainnet : sepolia;
-const publicClient = createPublicClient({ chain, transport: http() });
+let _publicClient: ReturnType<typeof createPublicClient> | null = null;
+function getPublicClient() {
+  if (!_publicClient) {
+    const chain = env().CHAIN_ID === 1 ? mainnet : sepolia;
+    _publicClient = createPublicClient({ chain, transport: http() });
+  }
+  return _publicClient;
+}
 
 // Token addresses - Sepolia defaults
 const TOKEN_MAP: Record<string, { address: string; decimals: number }> = {
@@ -47,44 +56,54 @@ export async function getQuote(tokenInSymbol: string, tokenOutSymbol: string, am
     throw new Error(`Unknown token: ${!tokenIn ? tokenInSymbol : tokenOutSymbol}`);
   }
 
-  // Use WETH address for ETH in quotes
-  const inputAddress = tokenInSymbol.toUpperCase() === 'ETH' ? getTokenAddress('WETH')!.address : tokenIn.address;
-  const outputAddress = tokenOutSymbol.toUpperCase() === 'ETH' ? getTokenAddress('WETH')!.address : tokenOut.address;
+  // Use WETH address when output is native ETH — the Trading API can crash
+  // with zero address as output, and the Universal Router unwraps automatically
+  const inputAddress = tokenIn.address;
+  const isNativeETHOut = tokenOut.address === '0x0000000000000000000000000000000000000000';
+  const outputAddress = isNativeETHOut ? getTokenAddress('WETH')!.address : tokenOut.address;
 
   const amountRaw = parseAmount(amount, tokenIn.decimals);
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'x-universal-router-version': '2.0'
   };
-  if (UNISWAP_API_KEY) {
-    headers['x-api-key'] = UNISWAP_API_KEY;
+  if (env().UNISWAP_API_KEY) {
+    headers['x-api-key'] = env().UNISWAP_API_KEY;
   }
 
   try {
-    const res = await fetch(`${UNISWAP_API_URL}/quote`, {
+    const res = await fetch(`${env().UNISWAP_API_URL}/quote`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         type: 'EXACT_INPUT',
-        tokenInChainId: CHAIN_ID,
-        tokenOutChainId: CHAIN_ID,
+        tokenInChainId: String(env().CHAIN_ID),
+        tokenOutChainId: String(env().CHAIN_ID),
         tokenIn: inputAddress,
         tokenOut: outputAddress,
         amount: amountRaw,
-        swapper: '0x0000000000000000000000000000000000000000',
-        urgency: 'normal'
+        swapper: env().DAO_WALLET_ADDRESS || '0x0000000000000000000000000000000000000000',
+        urgency: 'normal',
+        slippageTolerance: 0.5,
+        routingPreference: 'CLASSIC'
       })
     });
 
     if (!res.ok) {
       const errText = await res.text();
       console.warn(`[uniswap] Quote API error (${res.status}):`, errText);
-      // Return mock data for demo
       return getMockQuote(tokenInSymbol, tokenOutSymbol, amount);
     }
 
     const data = await res.json();
-    return formatQuoteResponse(data, tokenInSymbol, tokenOutSymbol, amount);
+    const formatted = formatQuoteResponse(data, tokenInSymbol, tokenOutSymbol, amount);
+    // If API returned 200 but amountOut is 0, fall back to mock
+    if (!formatted.amountOut || formatted.amountOut === '0' || parseFloat(formatted.amountOut) === 0) {
+      console.warn('[uniswap] Quote returned 0 output, using mock');
+      return getMockQuote(tokenInSymbol, tokenOutSymbol, amount);
+    }
+    return formatted;
   } catch (err) {
     console.warn('[uniswap] Quote fetch failed, using mock:', err);
     return getMockQuote(tokenInSymbol, tokenOutSymbol, amount);
@@ -94,21 +113,36 @@ export async function getQuote(tokenInSymbol: string, tokenOutSymbol: string, am
 function formatQuoteResponse(data: any, tokenIn: string, tokenOut: string, amount: string) {
   const tokenOutInfo = getTokenAddress(tokenOut);
   const outputDecimals = tokenOutInfo?.decimals ?? 18;
+  const q = data.quote;
 
+  // API returns output amount at quote.output.amount (raw units)
   let amountOut = '0';
-  if (data.quote?.amountOut) {
-    const raw = BigInt(data.quote.amountOut);
+  const rawOut = q?.output?.amount ?? q?.amountOut;
+  if (rawOut) {
+    const raw = BigInt(rawOut);
     amountOut = (Number(raw) / Math.pow(10, outputDecimals)).toFixed(outputDecimals > 6 ? 6 : 2);
   }
+
+  // Build readable route from route array: [[{tokenIn, tokenOut}]]
+  let routeStr = `${tokenIn.toUpperCase()} → ${tokenOut.toUpperCase()}`;
+  if (Array.isArray(q?.route) && q.route[0]?.[0]) {
+    const hops = q.route[0];
+    const symbols = [hops[0].tokenIn?.symbol, ...hops.map((h: any) => h.tokenOut?.symbol)].filter(Boolean);
+    if (symbols.length >= 2) routeStr = symbols.join(' → ');
+  }
+
+  // Gas estimate: use gasUseEstimate as gwei or format gasFee
+  const gasUse = q?.gasUseEstimate;
+  const gasStr = gasUse ? `~${gasUse} gas` : '~0.001 ETH';
 
   return {
     tokenIn: { address: getTokenAddress(tokenIn)?.address ?? '', symbol: tokenIn.toUpperCase(), name: tokenIn, decimals: getTokenAddress(tokenIn)?.decimals ?? 18 },
     tokenOut: { address: getTokenAddress(tokenOut)?.address ?? '', symbol: tokenOut.toUpperCase(), name: tokenOut, decimals: outputDecimals },
     amountIn: amount,
     amountOut,
-    priceImpact: data.quote?.priceImpact ?? '< 0.01',
-    gasEstimate: data.quote?.gasFee ?? '~0.001 ETH',
-    route: data.quote?.route ?? `${tokenIn} → ${tokenOut}`,
+    priceImpact: q?.priceImpact != null ? `${q.priceImpact}%` : '< 0.01%',
+    gasEstimate: gasStr,
+    route: routeStr,
     timestamp: new Date().toISOString()
   };
 }
@@ -172,6 +206,22 @@ export function resolveTokenByAddress(address: string): { symbol: string; decima
   return null;
 }
 
+// Resolve a token by symbol OR address — returns unified info
+export function resolveToken(input: string): { symbol: string; address: string; decimals: number } | null {
+  // Try symbol first
+  const bySymbol = getTokenAddress(input);
+  if (bySymbol) {
+    return { symbol: input.toUpperCase(), address: bySymbol.address, decimals: bySymbol.decimals };
+  }
+  // Try address
+  const byAddress = resolveTokenByAddress(input);
+  if (byAddress) {
+    const addr = Object.entries(TOKEN_MAP).find(([, v]) => v.address.toLowerCase() === input.toLowerCase());
+    return { symbol: byAddress.symbol, address: addr![1].address, decimals: byAddress.decimals };
+  }
+  return null;
+}
+
 export { getTokenAddress };
 
 const ERC20_BALANCE_ABI = [
@@ -184,12 +234,37 @@ const ERC20_BALANCE_ABI = [
   }
 ] as const;
 
+export async function getDaoBalances(): Promise<{ symbol: string; balance: string }[]> {
+  const results: { symbol: string; balance: string }[] = [];
+  for (const [symbol, info] of Object.entries(TOKEN_MAP)) {
+    try {
+      const isNativeETH = info.address === '0x0000000000000000000000000000000000000000';
+      let balance: bigint;
+      if (isNativeETH) {
+        balance = await getPublicClient().getBalance({ address: env().DAO_WALLET_ADDRESS as `0x${string}` });
+      } else {
+        balance = await getPublicClient().readContract({
+          address: info.address as `0x${string}`,
+          abi: ERC20_BALANCE_ABI,
+          functionName: 'balanceOf',
+          args: [env().DAO_WALLET_ADDRESS as `0x${string}`]
+        });
+      }
+      const formatted = isNativeETH ? formatEther(balance) : formatUnits(balance, info.decimals);
+      results.push({ symbol, balance: formatted });
+    } catch {
+      results.push({ symbol, balance: '0' });
+    }
+  }
+  return results;
+}
+
 export async function checkDaoBalance(
   tokenAddress: string,
   requiredAmount: string,
   decimals: number
 ): Promise<{ sufficient: boolean; balance: string }> {
-  if (!DAO_WALLET_ADDRESS) {
+  if (!env().DAO_WALLET_ADDRESS) {
     // No DAO wallet configured — assume sufficient for demo
     return { sufficient: true, balance: '0' };
   }
@@ -199,13 +274,13 @@ export async function checkDaoBalance(
     let balance: bigint;
 
     if (isNativeETH) {
-      balance = await publicClient.getBalance({ address: DAO_WALLET_ADDRESS as `0x${string}` });
+      balance = await getPublicClient().getBalance({ address: env().DAO_WALLET_ADDRESS as `0x${string}` });
     } else {
-      balance = await publicClient.readContract({
+      balance = await getPublicClient().readContract({
         address: tokenAddress as `0x${string}`,
         abi: ERC20_BALANCE_ABI,
         functionName: 'balanceOf',
-        args: [DAO_WALLET_ADDRESS as `0x${string}`]
+        args: [env().DAO_WALLET_ADDRESS as `0x${string}`]
       });
     }
 
@@ -227,11 +302,9 @@ export async function executeSwap(
   tokenOutSymbol: string,
   amountIn: string
 ): Promise<{ success: boolean; txHash?: string; error?: string }> {
-  if (!DAO_WALLET_ADDRESS || !DAO_WALLET_PRIVATE_KEY) {
-    // No wallet configured — return mock tx hash for demo
-    const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  if (!env().DAO_WALLET_ADDRESS || !env().DAO_WALLET_PRIVATE_KEY) {
     console.log('[uniswap] No DAO wallet configured, returning mock txHash');
-    return { success: true, txHash: mockHash };
+    return { success: true, txHash: mockTxHash() };
   }
 
   const tokenIn = getTokenAddress(tokenInSymbol);
@@ -240,97 +313,171 @@ export async function executeSwap(
     return { success: false, error: `Unknown token: ${!tokenIn ? tokenInSymbol : tokenOutSymbol}` };
   }
 
-  const inputAddress = tokenInSymbol.toUpperCase() === 'ETH' ? getTokenAddress('WETH')!.address : tokenIn.address;
-  const outputAddress = tokenOutSymbol.toUpperCase() === 'ETH' ? getTokenAddress('WETH')!.address : tokenOut.address;
+  // Use zero address for native ETH input (sets tx.value, skips Permit2)
+  // Use WETH address for native ETH output (API crashes with zero address,
+  // Universal Router unwraps WETH→ETH automatically)
+  const inputAddress = tokenIn.address;
+  const isNativeETHOut = tokenOut.address === '0x0000000000000000000000000000000000000000';
+  const outputAddress = isNativeETHOut ? getTokenAddress('WETH')!.address : tokenOut.address;
   const amountRaw = parseAmount(amountIn, tokenIn.decimals);
+  const isNativeETHIn = inputAddress === '0x0000000000000000000000000000000000000000';
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (UNISWAP_API_KEY) headers['x-api-key'] = UNISWAP_API_KEY;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-universal-router-version': '2.0'
+  };
+  if (env().UNISWAP_API_KEY) headers['x-api-key'] = env().UNISWAP_API_KEY;
+
+  const account = privateKeyToAccount(env().DAO_WALLET_PRIVATE_KEY as Hex);
+  const walletClient = createWalletClient({
+    account,
+    chain: env().CHAIN_ID === 1 ? mainnet : sepolia,
+    transport: http()
+  });
 
   try {
+    // Step 0: Check token approval (ERC20 only, not native ETH)
+    if (!isNativeETHIn) {
+      console.log('[uniswap] Step 0: Checking approval for', inputAddress);
+      const approvalRes = await fetch(`${env().UNISWAP_API_URL}/check_approval`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          walletAddress: env().DAO_WALLET_ADDRESS,
+          token: inputAddress,
+          amount: amountRaw,
+          chainId: env().CHAIN_ID
+        })
+      });
+
+      if (approvalRes.ok) {
+        const approvalData = await approvalRes.json();
+        if (approvalData.approval) {
+          console.log('[uniswap] Step 0: Approval needed, submitting approval tx...');
+          const approvalHash = await walletClient.sendTransaction({
+            to: approvalData.approval.to as `0x${string}`,
+            data: approvalData.approval.data as `0x${string}`,
+            value: BigInt(approvalData.approval.value || '0')
+          });
+          console.log('[uniswap] Step 0: Approval tx sent:', approvalHash);
+          // Wait for approval to be mined
+          const publicClient = getPublicClient();
+          const approvalReceipt = await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+          if (approvalReceipt.status === 'reverted') {
+            console.error('[uniswap] Step 0 FAILED - Approval tx reverted:', approvalHash);
+            return { success: false, error: 'Token approval transaction reverted on-chain' };
+          }
+          console.log('[uniswap] Step 0 OK - Approval confirmed');
+        } else {
+          console.log('[uniswap] Step 0 OK - Already approved');
+        }
+      } else {
+        console.warn('[uniswap] Step 0: check_approval failed, proceeding anyway:', await approvalRes.text());
+      }
+    }
+
     // Step 1: Get quote with DAO wallet as swapper
-    const quoteRes = await fetch(`${UNISWAP_API_URL}/quote`, {
+    console.log('[uniswap] Step 1: Requesting quote...', { tokenIn: inputAddress, tokenOut: outputAddress, amount: amountRaw, swapper: env().DAO_WALLET_ADDRESS });
+    const quoteRes = await fetch(`${env().UNISWAP_API_URL}/quote`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         type: 'EXACT_INPUT',
-        tokenInChainId: CHAIN_ID,
-        tokenOutChainId: CHAIN_ID,
+        tokenInChainId: String(env().CHAIN_ID),
+        tokenOutChainId: String(env().CHAIN_ID),
         tokenIn: inputAddress,
         tokenOut: outputAddress,
         amount: amountRaw,
-        swapper: DAO_WALLET_ADDRESS,
-        urgency: 'normal'
+        swapper: env().DAO_WALLET_ADDRESS,
+        urgency: 'normal',
+        slippageTolerance: 0.5,
+        routingPreference: 'CLASSIC'
       })
     });
 
     if (!quoteRes.ok) {
       const errText = await quoteRes.text();
-      console.warn('[uniswap] Quote for swap failed:', errText);
-      // Fallback to mock
-      const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      return { success: true, txHash: mockHash };
+      console.error('[uniswap] Step 1 FAILED - Quote API error:', quoteRes.status, errText);
+      console.log('[uniswap] Falling back to mock execution for demo');
+      return { success: true, txHash: mockTxHash() };
     }
 
-    const quoteData = await quoteRes.json();
-    const account = privateKeyToAccount(DAO_WALLET_PRIVATE_KEY as Hex);
+    const quoteResponse = await quoteRes.json();
+    console.log('[uniswap] Step 1 OK - Quote received, routing:', quoteResponse.routing, 'output:', quoteResponse.quote?.output?.amount);
 
     // Step 2: Sign Permit2 if required
-    let signature: string | undefined;
-    if (quoteData.permitData) {
-      signature = await account.signTypedData({
-        domain: quoteData.permitData.domain,
-        types: quoteData.permitData.types,
-        primaryType: quoteData.permitData.primaryType ?? 'PermitSingle',
-        message: quoteData.permitData.values
+    // Strip null fields — API rejects permitData: null
+    const { permitData, permitTransaction, ...cleanQuote } = quoteResponse;
+    const swapRequest: Record<string, any> = { ...cleanQuote };
+
+    if (permitData && typeof permitData === 'object') {
+      console.log('[uniswap] Step 2: Signing Permit2...');
+      const signature = await account.signTypedData({
+        domain: permitData.domain,
+        types: permitData.types,
+        primaryType: permitData.primaryType ?? 'PermitSingle',
+        message: permitData.values
       });
+      swapRequest.signature = signature;
+      swapRequest.permitData = permitData;
+      console.log('[uniswap] Step 2 OK - Permit2 signed');
+    } else {
+      console.log('[uniswap] Step 2 SKIP - No Permit2 required');
     }
 
-    // Step 3: Submit swap
-    const swapBody: any = { quote: quoteData };
-    if (signature) swapBody.signature = signature;
-
-    const swapRes = await fetch(`${UNISWAP_API_URL}/swap`, {
+    // Step 3: Submit swap — spread quote response into body (NOT wrapped in {quote:})
+    console.log('[uniswap] Step 3: Submitting swap to API...');
+    const swapRes = await fetch(`${env().UNISWAP_API_URL}/swap`, {
       method: 'POST',
       headers,
-      body: JSON.stringify(swapBody)
+      body: JSON.stringify(swapRequest)
     });
 
     if (!swapRes.ok) {
       const errText = await swapRes.text();
-      console.warn('[uniswap] Swap submission failed:', errText);
-      const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      return { success: true, txHash: mockHash };
+      console.error('[uniswap] Step 3 FAILED - Swap API error:', swapRes.status, errText);
+      return { success: false, error: `Swap API failed: ${errText}` };
     }
 
     const swapData = await swapRes.json();
+    console.log('[uniswap] Step 3 OK - Swap response received, has swap.data:', !!swapData.swap?.data);
 
-    // Step 4: Sign and broadcast the transaction
-    if (swapData.swap) {
-      const walletClient = createWalletClient({
-        account,
-        chain,
-        transport: http()
-      });
-
-      const txHash = await walletClient.sendTransaction({
-        to: swapData.swap.to as `0x${string}`,
-        data: swapData.swap.calldata as `0x${string}`,
-        value: swapData.swap.value ? BigInt(swapData.swap.value) : 0n,
-        gas: swapData.swap.gasLimit ? BigInt(swapData.swap.gasLimit) : undefined
-      });
-
-      return { success: true, txHash };
+    // Step 4: Validate and broadcast the transaction
+    const swap = swapData.swap;
+    if (!swap?.data || swap.data === '' || swap.data === '0x') {
+      console.error('[uniswap] Step 4 FAILED - swap.data is empty, quote may have expired');
+      return { success: false, error: 'Swap data empty — quote expired' };
     }
 
-    // If no swap data returned, use mock
-    const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    return { success: true, txHash: mockHash };
+    console.log('[uniswap] Step 4: Broadcasting tx...', { to: swap.to, value: swap.value, gasLimit: swap.gasLimit });
+
+    // Add 50% gas buffer to prevent out-of-gas reverts on testnet
+    const gasLimit = swap.gasLimit ? BigInt(swap.gasLimit) * 3n / 2n : undefined;
+
+    const txHash = await walletClient.sendTransaction({
+      to: swap.to as `0x${string}`,
+      data: swap.data as `0x${string}`,
+      value: swap.value ? BigInt(swap.value) : 0n,
+      gas: gasLimit
+    });
+
+    console.log('[uniswap] Step 4: Tx broadcasted:', txHash, '— waiting for confirmation...');
+    const receipt = await getPublicClient().waitForTransactionReceipt({ hash: txHash });
+
+    if (receipt.status === 'reverted') {
+      console.error('[uniswap] Step 4 FAILED - Transaction reverted on-chain:', txHash);
+      return { success: false, txHash, error: 'Transaction reverted on-chain' };
+    }
+
+    console.log('[uniswap] Step 4 OK - Tx confirmed in block', receipt.blockNumber, ':', txHash);
+    return { success: true, txHash };
   } catch (err: any) {
-    console.error('[uniswap] Swap execution failed:', err);
-    // Fallback mock for hackathon
-    const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    console.log('[uniswap] Returning mock txHash after error');
-    return { success: true, txHash: mockHash };
+    console.error('[uniswap] Swap execution failed:', err.message ?? err);
+    console.log('[uniswap] Falling back to mock execution for demo');
+    return { success: true, txHash: mockTxHash() };
   }
+}
+
+function mockTxHash() {
+  return '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
