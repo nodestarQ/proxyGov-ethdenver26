@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { shouldRespond, generateResponse } from '../twin-brain.js';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.post('/respond', async (req, res) => {
   const { message, sender, twinConfig, recentMessages, channelId, memberCount } = req.body;

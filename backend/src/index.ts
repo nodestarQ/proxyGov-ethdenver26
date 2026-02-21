@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname0 = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname0, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname0, process.env.NODE_ENV === 'production' ? '../../../../.env' : '../../.env') });
 
 import express from 'express';
 import cors from 'cors';
@@ -43,7 +43,11 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Serve static frontend in production
-const publicPath = path.join(__dirname0, '..', 'public');
+// In dev: __dirname0 = backend/src → ../public
+// In prod (compiled): __dirname0 = dist/backend/src → ../../../public
+const publicPath = process.env.NODE_ENV === 'production'
+  ? path.join(__dirname0, '..', '..', '..', 'public')
+  : path.join(__dirname0, '..', 'public');
 app.use(express.static(publicPath));
 app.get('/{*path}', (_req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));

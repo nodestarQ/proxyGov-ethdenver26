@@ -4,7 +4,7 @@ import { swapProposals } from '../schema.js';
 import { eq } from 'drizzle-orm';
 import type { SwapProposalPayload, SwapVote } from '../../../shared/types.js';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // GET /api/swap?channelId= — list proposals for a channel
 router.get('/swap', (req, res) => {

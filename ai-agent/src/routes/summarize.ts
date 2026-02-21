@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { summarizeConversation } from '../summarizer.js';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.post('/summarize', async (req, res) => {
   const { messages, userInterests, channelId, previousContext } = req.body;

@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { users } from '../schema.js';
 import { eq } from 'drizzle-orm';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Check if user profile exists
 router.get('/user/:address', (req, res) => {

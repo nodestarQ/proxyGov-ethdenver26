@@ -4,7 +4,7 @@ import { polls } from '../schema.js';
 import { eq } from 'drizzle-orm';
 import { v4 as uuid } from 'uuid';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.post('/poll', (req, res) => {
   const { channelId, question, options, creator } = req.body;

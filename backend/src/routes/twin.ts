@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { twinConfigs, users } from '../schema.js';
 import { eq } from 'drizzle-orm';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.get('/twin/:address', (req, res) => {
   const { address } = req.params;

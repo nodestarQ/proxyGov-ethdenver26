@@ -10,8 +10,8 @@ RUN pnpm install --prod --frozen-lockfile 2>/dev/null || pnpm install --prod
 COPY dist/ ./dist/
 
 ENV NODE_ENV=production
-ENV PORT=3002
+ENV PORT=3004
 
-EXPOSE 3002
+EXPOSE 3004
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/backend/src/index.js"]

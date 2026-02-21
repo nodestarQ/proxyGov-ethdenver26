@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getQuote, getTokenPrice, getAvailableTokens } from '../uniswap.js';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.get('/uniswap/tokens', (_req, res) => {
   res.json(getAvailableTokens());

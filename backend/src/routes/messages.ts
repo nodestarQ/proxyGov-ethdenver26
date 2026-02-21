@@ -4,7 +4,7 @@ import { messages, channelContexts } from '../schema.js';
 import { eq, and, gt } from 'drizzle-orm';
 import { v4 as uuid } from 'uuid';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.get('/messages', (req, res) => {
   const channelId = req.query.channelId as string;

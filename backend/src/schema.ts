@@ -28,7 +28,7 @@ export const messages = sqliteTable('messages', {
   sender: text('sender').notNull(),
   senderName: text('sender_name').notNull(),
   isTwin: integer('is_twin', { mode: 'boolean' }).default(false).notNull(),
-  type: text('type', { enum: ['text', 'swap-proposal', 'poll', 'summary', 'opportunity', 'system'] }).default('text').notNull(),
+  type: text('type', { enum: ['text', 'swap-proposal', 'poll', 'summary', 'opportunity', 'system', 'price', 'dao-balance'] }).default('text').notNull(),
   content: text('content').notNull(),
   signal: text('signal').default('{"up":[],"down":[]}').notNull(), // JSON string
   timestamp: text('timestamp').notNull()

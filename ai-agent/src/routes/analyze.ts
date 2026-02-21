@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { analyzeForOpportunities } from '../opportunity.js';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 router.post('/analyze', async (req, res) => {
   const { messages, userInterests } = req.body;
