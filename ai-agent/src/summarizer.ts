@@ -79,7 +79,10 @@ Now incorporate the NEW messages below into an updated, consolidated summary. Me
   });
 
   const textBlock = response.content.find(b => b.type === 'text');
-  const text = textBlock?.text ?? '{}';
+  let text = textBlock?.text?.trim() ?? '{}';
+
+  // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+  text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
 
   try {
     const parsed = JSON.parse(text);
