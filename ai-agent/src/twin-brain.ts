@@ -8,6 +8,7 @@ function getClient() {
 
 interface TwinConfig {
   ownerAddress: string;
+  ownerDisplayName?: string;
   personality: string;
   interests: string;
   responseStyle: string;
@@ -22,62 +23,38 @@ interface MessageContext {
 }
 
 export function buildSystemPrompt(config: TwinConfig, context: { channelId: string; memberCount: number }): string {
-  return `You are an AI twin representing a DAO member in a governance chat.
+  const name = config.ownerDisplayName ?? 'your owner';
+  return `You are the AI twin of ${name}, a DAO member. You are filling in for ${name} while they are away.
 
-PERSONALITY: ${config.personality || 'Helpful and engaged DAO participant.'}
+YOUR PERSONALITY (this is how ${name} acts -- match this tone and attitude closely):
+${config.personality || 'Helpful and engaged DAO participant.'}
 
-INTERESTS: ${config.interests || 'General DAO governance'}
+YOUR INTERESTS (topics ${name} cares about -- lean into these):
+${config.interests || 'General DAO governance'}
 
-RESPONSE STYLE: ${config.responseStyle || 'Keep it concise and helpful.'}
+YOUR SPEAKING STYLE (this is how ${name} talks -- mimic this closely):
+${config.responseStyle || 'Keep it concise and helpful.'}
 
 RULES:
-- You are a proxy for your owner who is currently away.
-- Always make it clear you're an AI twin when it's relevant.
-- You can suggest swaps up to ${config.maxSwapSizeEth} ETH. For larger amounts, say "my owner needs to weigh in."
-- Focus on topics matching your interests.
-- Don't make commitments or final decisions on behalf of your owner.
-- Be helpful but brief - this is a chat, not an essay.
+- Stay in character as ${name}'s twin. Your personality, interests, and speaking style above define who you are. Do not break character.
+- You can suggest swaps up to ${config.maxSwapSizeEth} ETH. For larger amounts, say "${name} needs to weigh in on that."
+- Don't make commitments or final decisions on behalf of ${name}.
+- Keep replies short and natural -- this is a group chat, not an essay.
 - Channel: #${context.channelId}, Members online: ${context.memberCount}
 
-IMPORTANT: Respond naturally as if you're chatting. No markdown headers or formal structure.`;
+IMPORTANT: Write like you're chatting casually. No markdown, no headers, no bullet points. Just talk like ${name} would.`;
 }
 
 export function shouldRespond(
   message: string,
-  sender: string,
+  _sender: string,
   config: TwinConfig,
-  recentMessages: MessageContext[]
+  _recentMessages: MessageContext[]
 ): boolean {
-  const content = message.toLowerCase();
-
-  // Direct mention of owner
-  if (content.includes(config.ownerAddress.toLowerCase().slice(0, 8))) {
-    return true;
+  // Only respond when explicitly @mentioned by owner's displayName
+  if (config.ownerDisplayName) {
+    return message.includes(`@${config.ownerDisplayName}`);
   }
-
-  // Matches interest keywords (split free-text on commas/spaces)
-  if (config.interests) {
-    const keywords = config.interests.split(/[,\s]+/).filter(k => k.length > 2);
-    for (const keyword of keywords) {
-      if (content.includes(keyword.toLowerCase())) {
-        return true;
-      }
-    }
-  }
-
-  // Question mark + owner was recently active (within last 10 messages)
-  if (content.includes('?')) {
-    const ownerRecent = recentMessages.slice(-10).some(
-      m => m.sender === config.ownerAddress || (m.isTwin && content.length > 20)
-    );
-    if (ownerRecent) return true;
-  }
-
-  // Direct question patterns
-  if (content.match(/what do (you|we) think|anyone|thoughts\?|opinions?\?|vote|proposal/i)) {
-    return true;
-  }
-
   return false;
 }
 

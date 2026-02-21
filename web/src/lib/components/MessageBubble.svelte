@@ -17,6 +17,38 @@
   let showReactions = $state(false);
 
   const isOwn = $derived(message.sender === wallet.address);
+
+  type Segment = { text: string; isMention: boolean };
+
+  const contentSegments = $derived.by((): Segment[] => {
+    if (message.type !== 'text') return [{ text: message.content, isMention: false }];
+
+    const memberNames = new Set(chat.members.map(m => m.displayName));
+    const segments: Segment[] = [];
+    // Match @word patterns
+    const regex = /@(\S+)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(message.content)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: message.content.slice(lastIndex, match.index), isMention: false });
+      }
+      const name = match[1];
+      if (memberNames.has(name)) {
+        segments.push({ text: `@${name}`, isMention: true });
+      } else {
+        segments.push({ text: match[0], isMention: false });
+      }
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < message.content.length) {
+      segments.push({ text: message.content.slice(lastIndex), isMention: false });
+    }
+
+    return segments.length > 0 ? segments : [{ text: message.content, isMention: false }];
+  });
 </script>
 
 {#if message.type === 'system'}
@@ -59,7 +91,7 @@
           {:else if message.type === 'opportunity'}
             <OpportunityAlert payload={JSON.parse(message.content)} />
           {:else}
-            <p class="whitespace-pre-wrap break-words">{message.content}</p>
+            <p class="whitespace-pre-wrap break-words">{#each contentSegments as seg}{#if seg.isMention}<span class="font-semibold {isOwn ? 'text-bg/80' : 'text-twin'}">{seg.text}</span>{:else}{seg.text}{/if}{/each}</p>
           {/if}
         </div>
 

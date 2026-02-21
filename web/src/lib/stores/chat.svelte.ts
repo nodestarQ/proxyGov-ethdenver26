@@ -98,7 +98,8 @@ export const chat = {
     });
 
     socket.on('user:leave', (address) => {
-      state.members = state.members.filter(m => m.address !== address);
+      // Keep twin-enabled users in the list (their twin is still active)
+      state.members = state.members.filter(m => m.address !== address || m.twinEnabled);
     });
 
     socket.on('user:status', ({ address, status }) => {

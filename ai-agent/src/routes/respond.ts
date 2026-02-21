@@ -12,6 +12,7 @@ router.post('/respond', async (req, res) => {
   }
 
   try {
+    console.log(`[respond] Twin for ${twinConfig.ownerDisplayName}: personality="${twinConfig.personality?.slice(0, 60) ?? '(empty)'}"`);
     const should = shouldRespond(message, sender, twinConfig, recentMessages ?? []);
 
     if (!should) {

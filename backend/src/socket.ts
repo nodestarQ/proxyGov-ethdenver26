@@ -191,9 +191,17 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
     socket.on('disconnect', () => {
       if (userAddress) {
         connectedUsers.delete(userAddress);
-        db.update(users).set({ status: 'offline' }).where(eq(users.address, userAddress)).run();
-        io.emit('user:leave', userAddress);
-        console.log(`[socket] ${userAddress.slice(0, 8)}... disconnected`);
+        const user = db.select().from(users).where(eq(users.address, userAddress)).get();
+        if (user?.twinEnabled) {
+          // Twin stays active: mark as away so twin can still respond
+          db.update(users).set({ status: 'away' }).where(eq(users.address, userAddress)).run();
+          io.emit('user:status', { address: userAddress, status: 'away' as const });
+          console.log(`[socket] ${userAddress.slice(0, 8)}... disconnected (twin stays active)`);
+        } else {
+          db.update(users).set({ status: 'offline' }).where(eq(users.address, userAddress)).run();
+          io.emit('user:leave', userAddress);
+          console.log(`[socket] ${userAddress.slice(0, 8)}... disconnected`);
+        }
       }
     });
   });
@@ -342,6 +350,10 @@ async function checkTwinResponses(
 
       if (!twinConfig || !twinConfig.enabled) continue;
 
+      // Only respond when explicitly @mentioned by displayName
+      const mentionPattern = `@${user.displayName}`;
+      if (!message.content.includes(mentionPattern)) continue;
+
       // Get recent messages for context
       const recentMsgs = db.select().from(messages)
         .where(eq(messages.channelId, channelId))
@@ -349,16 +361,19 @@ async function checkTwinResponses(
         .slice(-20);
 
       try {
+        const twinPayload = {
+          ...twinConfig,
+          ownerDisplayName: user.displayName
+        };
+        console.log(`[twin] Triggering twin for ${user.displayName}: personality="${twinConfig.personality?.slice(0, 50)}", interests="${twinConfig.interests?.slice(0, 50)}"`);
+
         const res = await fetch(`${AI_AGENT_URL}/api/respond`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: message.content,
             sender: message.senderName,
-            twinConfig: {
-              ...twinConfig,
-              interests: twinConfig.interests
-            },
+            twinConfig: twinPayload,
             recentMessages: recentMsgs.map(m => ({
               sender: m.senderName,
               content: m.content,

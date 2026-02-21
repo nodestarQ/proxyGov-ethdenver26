@@ -1,28 +1,130 @@
 <script lang="ts">
   import { chat } from '$lib/stores/chat.svelte';
+  import { wallet } from '$lib/stores/wallet.svelte';
 
   let inputValue = $state('');
+  let textareaEl = $state<HTMLTextAreaElement>();
+  let mentionQuery = $state<string | null>(null);
+  let mentionStartIndex = $state(0);
+  let selectedIndex = $state(0);
+
+  const filteredMembers = $derived(
+    mentionQuery !== null
+      ? chat.members
+          .filter(m => m.address !== wallet.address)
+          .filter(m => m.displayName.toLowerCase().includes(mentionQuery!.toLowerCase()))
+          .slice(0, 5)
+      : []
+  );
+
+  function updateMentionQuery() {
+    if (!textareaEl) return;
+    const pos = textareaEl.selectionStart;
+    const textBefore = inputValue.slice(0, pos);
+    // Find the last @ that isn't preceded by a non-space char
+    const match = textBefore.match(/(^|[\s])@([^\s]*)$/);
+    if (match) {
+      mentionQuery = match[2];
+      mentionStartIndex = textBefore.length - match[2].length - 1; // position of @
+      selectedIndex = 0;
+    } else {
+      mentionQuery = null;
+    }
+  }
+
+  function selectMention(displayName: string) {
+    const before = inputValue.slice(0, mentionStartIndex);
+    const after = inputValue.slice(mentionStartIndex + 1 + (mentionQuery?.length ?? 0));
+    inputValue = `${before}@${displayName} ${after}`;
+    mentionQuery = null;
+    // Refocus and set cursor after inserted mention
+    tick().then(() => {
+      if (textareaEl) {
+        const cursorPos = before.length + 1 + displayName.length + 1;
+        textareaEl.selectionStart = cursorPos;
+        textareaEl.selectionEnd = cursorPos;
+        textareaEl.focus();
+      }
+    });
+  }
 
   function handleSend() {
     const content = inputValue.trim();
     if (!content) return;
     chat.sendMessage(content, content.startsWith('/') ? 'text' : undefined);
     inputValue = '';
+    mentionQuery = null;
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if (mentionQuery !== null && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex + 1) % filteredMembers.length;
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIndex = (selectedIndex - 1 + filteredMembers.length) % filteredMembers.length;
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        selectMention(filteredMembers[selectedIndex].displayName);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        mentionQuery = null;
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   }
+
+  // Svelte 5 doesn't have tick as auto-import, import it
+  import { tick } from 'svelte';
 </script>
 
-<div class="border-t border-border bg-bg-surface px-3 py-2">
+<div class="border-t border-border bg-bg-surface px-3 py-2 relative">
+  <!-- Mention autocomplete dropdown -->
+  {#if mentionQuery !== null && filteredMembers.length > 0}
+    <div class="absolute bottom-full left-3 right-3 mb-1 bg-bg-elevated border border-border rounded-lg shadow-md overflow-hidden z-10">
+      {#each filteredMembers as member, i}
+        <button
+          class="w-full px-3 py-2 flex items-center gap-2 text-left text-sm transition-colors
+                 {i === selectedIndex ? 'bg-bg-hover' : 'hover:bg-bg-hover'}"
+          onpointerdown={(e) => { e.preventDefault(); selectMention(member.displayName); }}
+        >
+          {#if member.avatarUrl}
+            {#if member.avatarUrl.length <= 4}
+              <span class="w-6 h-6 flex items-center justify-center rounded-full bg-bg-surface text-sm">{member.avatarUrl}</span>
+            {:else}
+              <img src={member.avatarUrl} alt="" class="w-6 h-6 rounded-full object-cover" />
+            {/if}
+          {:else}
+            <span class="w-6 h-6 flex items-center justify-center rounded-full bg-bg-surface text-xs font-medium">
+              {member.displayName.charAt(0).toUpperCase()}
+            </span>
+          {/if}
+          <span class="text-text-primary font-medium">{member.displayName}</span>
+          <span class="text-text-muted text-xs ml-auto">{member.address.slice(0, 6)}...{member.address.slice(-4)}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
   <div class="flex items-end gap-2">
     <textarea
+      bind:this={textareaEl}
       bind:value={inputValue}
+      oninput={updateMentionQuery}
       onkeydown={handleKeydown}
+      onclick={updateMentionQuery}
       placeholder="Message #{chat.activeChannel}..."
       rows="1"
       class="flex-1 bg-bg-elevated border border-border rounded-full px-4 py-2 text-sm
