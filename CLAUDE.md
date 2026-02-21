@@ -41,7 +41,8 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 - **Express v5** - uses `/{*path}` syntax for catch-all routes (not `*`)
 - **Svelte 5 runes** - stores use `$state`, `$derived`, `$effect` (not legacy stores)
 - **adapter-static** - SvelteKit builds to static files, served by backend in prod
-- **In-memory SQLite** - resets on restart, seed data auto-loads
+- **In-memory SQLite** - resets on restart, seed data auto-loads (3 demo users: evil_Vitalik, MrBluesballs, wataboard.eth)
+- **Twins only respond to @mentions** - backend checks for `@displayName` in message content before triggering twin response. Seed data reflects this: every twin message is preceded by an @mention from another user
 - **pnpm workspaces** - monorepo with `pnpm-workspace.yaml`
 - **better-sqlite3** requires native rebuild: `pnpm --filter twingovernance-backend rebuild better-sqlite3`
 
@@ -141,6 +142,14 @@ Server → Client: `message:new`, `message:signal`, `user:join`, `user:leave`, `
 Typing events include an `isTwin?: boolean` field on server→client payloads. Twin typing is emitted by the backend during AI agent processing in `checkTwinResponses`. The frontend tracks human and twin typing separately and renders twin typing with purple styling and a TWIN badge.
 
 All channels are joined on connect (not just active) so unread counts work across channels.
+
+## Seed Data
+
+3 demo users (evil_Vitalik + wataboard.eth have twins enabled, MrBluesballs does not). 3 channels with seeded conversations:
+
+- **#general** (30 msgs) - DAO expansion to Abstract L2 chain discussion. Mix of serious governance talk, skepticism, and trolling (downvoted). Twins respond only when @mentioned.
+- **#proposals** (10 msgs) - Bear market treasury hedge: 40% to stables (USDC/DAI), aave yield, 90-day review. Ends with open question about who executes the multisig txs.
+- **#alpha** (16 msgs) - Shitcoin research with twins: $GRIFT (flagged as rug), $ONCHAIN (mixed signals), pivot to Pendle yield trading as real alpha. Twins used as on-demand research tools via @mentions.
 
 ## Environment
 

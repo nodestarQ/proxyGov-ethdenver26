@@ -37,8 +37,8 @@ export const TOKENS: Record<string, { address: string; symbol: string; name: str
 
 export const DEFAULT_CHANNELS = [
   { id: 'general', name: 'general', description: 'General DAO discussion' },
-  { id: 'defi', name: 'defi', description: 'DeFi opportunities and swaps' },
-  { id: 'governance', name: 'governance', description: 'Governance proposals and votes' }
+  { id: 'proposals', name: 'proposals', description: 'Governance proposals and votes' },
+  { id: 'alpha', name: 'alpha', description: 'Shitcoining and alpha plays' }
 ];
 
 export const BACKEND_URL = import.meta.env.DEV ? '' : '';
