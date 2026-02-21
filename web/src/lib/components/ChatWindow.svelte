@@ -13,6 +13,25 @@
 
   let messagesContainer: HTMLDivElement;
 
+  const typingEntries = $derived.by(() => {
+    const entries = (chat.typingUsers[chat.activeChannel] ?? [])
+      .filter(t => t.address !== wallet.address);
+    return entries.map(t => ({
+      name: chat.members.find(m => m.address === t.address)?.displayName ?? t.address.slice(0, 6),
+      isTwin: t.isTwin
+    }));
+  });
+
+  const hasTwinTyping = $derived(typingEntries.some(e => e.isTwin));
+
+  const typingText = $derived.by(() => {
+    if (typingEntries.length === 0) return '';
+    const labels = typingEntries.map(e => e.isTwin ? `${e.name}'s twin` : e.name);
+    if (labels.length === 1) return `${labels[0]} is typing`;
+    if (labels.length === 2) return `${labels[0]} and ${labels[1]} are typing`;
+    return `${labels[0]}, ${labels[1]} and ${labels.length - 2} others are typing`;
+  });
+
   async function scrollToBottom() {
     await tick();
     if (messagesContainer) {
@@ -80,6 +99,25 @@
       </div>
     {/if}
   </div>
+
+  <!-- Typing indicator -->
+  {#if typingText}
+    <div class="px-4 py-1 text-xs flex items-center gap-1.5" class:text-twin={hasTwinTyping} class:text-text-muted={!hasTwinTyping}>
+      <span class="flex gap-0.5">
+        <span class="w-1 h-1 rounded-full animate-bounce" class:bg-twin={hasTwinTyping} class:bg-text-muted={!hasTwinTyping} style="animation-delay: 0ms"></span>
+        <span class="w-1 h-1 rounded-full animate-bounce" class:bg-twin={hasTwinTyping} class:bg-text-muted={!hasTwinTyping} style="animation-delay: 150ms"></span>
+        <span class="w-1 h-1 rounded-full animate-bounce" class:bg-twin={hasTwinTyping} class:bg-text-muted={!hasTwinTyping} style="animation-delay: 300ms"></span>
+      </span>
+      {#if hasTwinTyping}
+        <span class="inline-flex items-center gap-1">
+          <span class="px-1 py-0.5 text-[9px] font-bold bg-twin/20 text-twin rounded">TWIN</span>
+          <span>{typingText}</span>
+        </span>
+      {:else}
+        <span>{typingText}</span>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Input -->
   <MessageInput />

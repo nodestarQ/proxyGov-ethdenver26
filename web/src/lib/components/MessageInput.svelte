@@ -8,6 +8,9 @@
   let mentionStartIndex = $state(0);
   let selectedIndex = $state(0);
 
+  let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+  let lastTypingSent = 0;
+
   const filteredMembers = $derived(
     mentionQuery !== null
       ? chat.members
@@ -16,6 +19,27 @@
           .slice(0, 5)
       : []
   );
+
+  function handleTyping() {
+    const now = Date.now();
+    if (now - lastTypingSent > 1000) {
+      chat.notifyTyping(chat.activeChannel);
+      lastTypingSent = now;
+    }
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      chat.notifyStopTyping(chat.activeChannel);
+      typingTimeout = null;
+    }, 3000);
+  }
+
+  function stopTyping() {
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      typingTimeout = null;
+    }
+    chat.notifyStopTyping(chat.activeChannel);
+  }
 
   function updateMentionQuery() {
     if (!textareaEl) return;
@@ -51,6 +75,7 @@
   function handleSend() {
     const content = inputValue.trim();
     if (!content) return;
+    stopTyping();
     chat.sendMessage(content, content.startsWith('/') ? 'text' : undefined);
     inputValue = '';
     mentionQuery = null;
@@ -122,7 +147,7 @@
     <textarea
       bind:this={textareaEl}
       bind:value={inputValue}
-      oninput={updateMentionQuery}
+      oninput={() => { updateMentionQuery(); handleTyping(); }}
       onkeydown={handleKeydown}
       onclick={updateMentionQuery}
       placeholder="Message #{chat.activeChannel}..."

@@ -109,6 +109,8 @@ export interface ServerToClientEvents {
   'poll:update': (poll: Poll) => void;
   'price:update': (price: TokenPrice) => void;
   'channel:members': (data: { channelId: string; members: User[] }) => void;
+  'user:typing': (data: { address: string; channelId: string; isTwin?: boolean }) => void;
+  'user:stop-typing': (data: { address: string; channelId: string; isTwin?: boolean }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -119,6 +121,8 @@ export interface ClientToServerEvents {
   'user:authenticate': (data: { address: string; signature: string; message: string }) => void;
   'user:status': (status: User['status']) => void;
   'poll:vote': (data: { pollId: string; optionId: string }) => void;
+  'user:typing': (channelId: string) => void;
+  'user:stop-typing': (channelId: string) => void;
 }
 
 // ─── API Payloads ────────────────────────────────────────────────

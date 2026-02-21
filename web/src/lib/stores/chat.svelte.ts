@@ -12,6 +12,7 @@ interface ChatState {
   catchUpSummaries: Record<string, SummaryPayload | null>;
   catchUpLoading: Record<string, boolean>;
   catchUpExpanded: Record<string, boolean>;
+  typingUsers: Record<string, { address: string; isTwin: boolean }[]>;
 }
 
 let state = $state<ChatState>({
@@ -23,7 +24,8 @@ let state = $state<ChatState>({
   unreadCounts: {},
   catchUpSummaries: {},
   catchUpLoading: {},
-  catchUpExpanded: {}
+  catchUpExpanded: {},
+  typingUsers: {}
 });
 
 let socketBound = false;
@@ -40,6 +42,7 @@ export const chat = {
   get catchUpSummaries() { return state.catchUpSummaries; },
   get catchUpLoading() { return state.catchUpLoading; },
   get catchUpExpanded() { return state.catchUpExpanded; },
+  get typingUsers() { return state.typingUsers; },
 
   setCatchUpLoading(channelId: string, loading: boolean) {
     state.catchUpLoading = { ...state.catchUpLoading, [channelId]: loading };
@@ -63,6 +66,16 @@ export const chat = {
       // Clear unread for the channel being viewed
       state.unreadCounts = { ...state.unreadCounts, [state.activeChannel]: 0 };
     }
+  },
+
+  notifyTyping(channelId: string) {
+    const socket = getSocket();
+    socket.emit('user:typing', channelId);
+  },
+
+  notifyStopTyping(channelId: string) {
+    const socket = getSocket();
+    socket.emit('user:stop-typing', channelId);
   },
 
   setActiveChannel(channelId: string) {
@@ -139,6 +152,20 @@ export const chat = {
       if (channelId === state.activeChannel) {
         state.members = members;
       }
+    });
+
+    socket.on('user:typing', ({ address, channelId, isTwin }) => {
+      const current = state.typingUsers[channelId] ?? [];
+      const twin = !!isTwin;
+      if (!current.some(t => t.address === address && t.isTwin === twin)) {
+        state.typingUsers = { ...state.typingUsers, [channelId]: [...current, { address, isTwin: twin }] };
+      }
+    });
+
+    socket.on('user:stop-typing', ({ address, channelId, isTwin }) => {
+      const current = state.typingUsers[channelId] ?? [];
+      const twin = !!isTwin;
+      state.typingUsers = { ...state.typingUsers, [channelId]: current.filter(t => !(t.address === address && t.isTwin === twin)) };
     });
 
     socketBound = true;

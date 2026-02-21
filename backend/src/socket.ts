@@ -194,6 +194,16 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       io.emit('user:status', { address: userAddress, status });
     });
 
+    socket.on('user:typing', (channelId) => {
+      if (!userAddress) return;
+      socket.to(channelId).emit('user:typing', { address: userAddress, channelId });
+    });
+
+    socket.on('user:stop-typing', (channelId) => {
+      if (!userAddress) return;
+      socket.to(channelId).emit('user:stop-typing', { address: userAddress, channelId });
+    });
+
     socket.on('disconnect', () => {
       if (userAddress) {
         connectedUsers.delete(userAddress);
@@ -373,6 +383,9 @@ async function checkTwinResponses(
         };
         console.log(`[twin] Triggering twin for ${user.displayName}: personality="${twinConfig.personality?.slice(0, 50)}", interests="${twinConfig.interests?.slice(0, 50)}"`);
 
+        // Show twin typing indicator while AI agent processes
+        io.to(channelId).emit('user:typing', { address: member.userAddress, channelId, isTwin: true });
+
         const res = await fetch(`${AI_AGENT_URL}/api/respond`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -391,6 +404,9 @@ async function checkTwinResponses(
             memberCount: memberRows.length
           })
         });
+
+        // Stop twin typing indicator
+        io.to(channelId).emit('user:stop-typing', { address: member.userAddress, channelId, isTwin: true });
 
         if (!res.ok) continue;
         const { shouldRespond, response } = await res.json();
@@ -415,7 +431,8 @@ async function checkTwinResponses(
           }, 1500 + Math.random() * 2000);
         }
       } catch {
-        // AI agent not running - skip
+        // AI agent not running - stop typing indicator and skip
+        io.to(channelId).emit('user:stop-typing', { address: member.userAddress, channelId, isTwin: true });
       }
     }
   } catch (err) {
