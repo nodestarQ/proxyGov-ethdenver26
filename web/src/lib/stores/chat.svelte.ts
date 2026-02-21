@@ -1,4 +1,4 @@
-import type { Message, User, Channel } from '../../../../shared/types.js';
+import type { Message, User, Channel, SummaryPayload } from '../../../../shared/types.js';
 import { getSocket } from '../utils/socket-client.js';
 import { DEFAULT_CHANNELS } from '../utils/constants.js';
 
@@ -9,6 +9,9 @@ interface ChatState {
   members: User[];
   loading: boolean;
   unreadCounts: Record<string, number>;
+  catchUpSummaries: Record<string, SummaryPayload | null>;
+  catchUpLoading: Record<string, boolean>;
+  catchUpExpanded: Record<string, boolean>;
 }
 
 let state = $state<ChatState>({
@@ -17,7 +20,10 @@ let state = $state<ChatState>({
   activeChannel: 'general',
   members: [],
   loading: false,
-  unreadCounts: {}
+  unreadCounts: {},
+  catchUpSummaries: {},
+  catchUpLoading: {},
+  catchUpExpanded: {}
 });
 
 let socketBound = false;
@@ -31,6 +37,25 @@ export const chat = {
   get members() { return state.members; },
   get loading() { return state.loading; },
   get unreadCounts() { return state.unreadCounts; },
+  get catchUpSummaries() { return state.catchUpSummaries; },
+  get catchUpLoading() { return state.catchUpLoading; },
+  get catchUpExpanded() { return state.catchUpExpanded; },
+
+  setCatchUpLoading(channelId: string, loading: boolean) {
+    state.catchUpLoading = { ...state.catchUpLoading, [channelId]: loading };
+  },
+
+  setCatchUpSummary(channelId: string, summary: SummaryPayload | null) {
+    state.catchUpSummaries = { ...state.catchUpSummaries, [channelId]: summary };
+  },
+
+  toggleCatchUpExpanded(channelId: string) {
+    state.catchUpExpanded = { ...state.catchUpExpanded, [channelId]: !state.catchUpExpanded[channelId] };
+  },
+
+  collapseCatchUp(channelId: string) {
+    state.catchUpExpanded = { ...state.catchUpExpanded, [channelId]: false };
+  },
 
   setViewingChat(viewing: boolean) {
     viewingChat = viewing;

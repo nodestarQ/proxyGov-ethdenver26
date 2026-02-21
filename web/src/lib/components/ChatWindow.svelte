@@ -1,7 +1,6 @@
 <script lang="ts">
   import { chat } from '$lib/stores/chat.svelte';
   import { wallet } from '$lib/stores/wallet.svelte';
-  import { twin } from '$lib/stores/twin.svelte';
   import { tick } from 'svelte';
   import { api } from '$lib/utils/api';
   import MessageBubble from './MessageBubble.svelte';
@@ -13,7 +12,6 @@
   let { onBack }: Props = $props();
 
   let messagesContainer: HTMLDivElement;
-  let summarizing = $state(false);
 
   async function scrollToBottom() {
     await tick();
@@ -37,26 +35,6 @@
     chat.messages;
     scrollToBottom();
   });
-
-  async function catchMeUp() {
-    if (!wallet.address) return;
-    summarizing = true;
-    try {
-      const summary = await api.summarize(
-        chat.activeChannel,
-        wallet.address,
-        twin.config?.interests ?? ''
-      );
-      chat.sendMessage(JSON.stringify({
-        ...summary,
-        channelId: chat.activeChannel
-      }), 'summary');
-    } catch (err) {
-      console.error('Summarize failed:', err);
-    } finally {
-      summarizing = false;
-    }
-  }
 </script>
 
 <div class="flex flex-col h-full">
@@ -78,15 +56,6 @@
         {chat.members.length} online
       </p>
     </div>
-    <button
-      onclick={catchMeUp}
-      disabled={summarizing || chat.messages.length === 0}
-      class="px-2.5 py-1 text-[11px] font-medium border border-twin/40 text-twin rounded-full
-             hover:bg-twin/10 transition-colors whitespace-nowrap
-             disabled:opacity-30 disabled:cursor-not-allowed"
-    >
-      {summarizing ? 'Summarizing...' : 'Catch up'}
-    </button>
   </header>
 
   <!-- Messages -->

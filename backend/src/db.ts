@@ -57,6 +57,20 @@ export function initDb() {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS channel_contexts (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL REFERENCES channels(id),
+      user_address TEXT NOT NULL REFERENCES users(address),
+      summary TEXT NOT NULL,
+      key_topics TEXT NOT NULL DEFAULT '[]',
+      action_items TEXT NOT NULL DEFAULT '[]',
+      mentioned_tokens TEXT NOT NULL DEFAULT '[]',
+      message_count INTEGER NOT NULL DEFAULT 0,
+      last_message_timestamp TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(channel_id, user_address)
+    );
+
     CREATE TABLE IF NOT EXISTS polls (
       id TEXT PRIMARY KEY,
       channel_id TEXT NOT NULL REFERENCES channels(id),

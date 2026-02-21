@@ -137,6 +137,7 @@ export interface SummaryPayload {
   mentionedTokens: string[];
   messageCount: number;
   timeRange: { from: string; to: string };
+  isUpToDate?: boolean;
 }
 
 export interface OpportunityPayload {

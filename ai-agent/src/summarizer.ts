@@ -14,10 +14,19 @@ interface MessageForSummary {
   type?: string;
 }
 
+interface PreviousContext {
+  summary: string;
+  keyTopics: string[];
+  actionItems: string[];
+  mentionedTokens: string[];
+  messageCount: number;
+}
+
 export async function summarizeConversation(
   messages: MessageForSummary[],
   userInterests: string | string[],
-  channelId: string
+  channelId: string,
+  previousContext: PreviousContext | null = null
 ): Promise<{
   summary: string;
   keyTopics: string[];
@@ -30,16 +39,39 @@ export async function summarizeConversation(
     .map(m => `[${m.timestamp}] ${m.sender}${m.isTwin ? ' (AI Twin)' : ''}: ${m.content}`)
     .join('\n');
 
-  const response = await getClient().messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 500,
-    system: `You summarize DAO chat conversations. The user's interests are: ${Array.isArray(userInterests) ? userInterests.join(', ') : userInterests || 'general governance'}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
+  const interests = Array.isArray(userInterests) ? userInterests.join(', ') : userInterests || 'general governance';
+
+  let systemPrompt: string;
+  if (previousContext) {
+    systemPrompt = `You summarize DAO chat conversations with rolling context. The user's interests are: ${interests}. Focus on what's relevant to them.
+
+You have a PREVIOUS summary of this channel that covered ${previousContext.messageCount} messages:
+- Previous summary: ${previousContext.summary}
+- Previous key topics: ${previousContext.keyTopics.join(', ')}
+- Previous action items: ${previousContext.actionItems.join(', ')}
+- Previously mentioned tokens: ${previousContext.mentionedTokens.join(', ')}
+
+Now incorporate the NEW messages below into an updated, consolidated summary. Merge topics, update action items (remove completed ones, add new ones), and combine token mentions. Return ONLY valid JSON with this structure:
+{
+  "summary": "2-3 sentence consolidated summary covering both previous context and new messages",
+  "keyTopics": ["topic1", "topic2"],
+  "actionItems": ["action1", "action2"],
+  "mentionedTokens": ["ETH", "UNI"]
+}`;
+  } else {
+    systemPrompt = `You summarize DAO chat conversations. The user's interests are: ${interests}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
 {
   "summary": "2-3 sentence summary",
   "keyTopics": ["topic1", "topic2"],
   "actionItems": ["action1", "action2"],
   "mentionedTokens": ["ETH", "UNI"]
-}`,
+}`;
+  }
+
+  const response = await getClient().messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 800,
+    system: systemPrompt,
     messages: [{
       role: 'user',
       content: `Summarize this conversation from #${channelId}:\n\n${conversationText}`

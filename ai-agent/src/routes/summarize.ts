@@ -4,7 +4,7 @@ import { summarizeConversation } from '../summarizer.js';
 const router = Router();
 
 router.post('/summarize', async (req, res) => {
-  const { messages, userInterests, channelId } = req.body;
+  const { messages, userInterests, channelId, previousContext } = req.body;
 
   if (!messages || !Array.isArray(messages)) {
     res.status(400).json({ error: 'messages array required' });
@@ -15,7 +15,8 @@ router.post('/summarize', async (req, res) => {
     const summary = await summarizeConversation(
       messages,
       userInterests ?? [],
-      channelId ?? 'general'
+      channelId ?? 'general',
+      previousContext ?? null
     );
     res.json(summary);
   } catch (err: any) {

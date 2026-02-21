@@ -46,6 +46,19 @@ export const twinConfigs = sqliteTable('twin_configs', {
   updatedAt: text('updated_at').notNull()
 });
 
+export const channelContexts = sqliteTable('channel_contexts', {
+  id: text('id').primaryKey(),
+  channelId: text('channel_id').notNull().references(() => channels.id),
+  userAddress: text('user_address').notNull().references(() => users.address),
+  summary: text('summary').notNull(),
+  keyTopics: text('key_topics').notNull().default('[]'),       // JSON string
+  actionItems: text('action_items').notNull().default('[]'),   // JSON string
+  mentionedTokens: text('mentioned_tokens').notNull().default('[]'), // JSON string
+  messageCount: integer('message_count').notNull().default(0),
+  lastMessageTimestamp: text('last_message_timestamp').notNull(),
+  createdAt: text('created_at').notNull()
+});
+
 export const polls = sqliteTable('polls', {
   id: text('id').primaryKey(),
   channelId: text('channel_id').notNull().references(() => channels.id),
