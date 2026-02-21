@@ -100,6 +100,20 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       };
       io.emit('user:join', user);
 
+      // Backfill channel_members for rooms joined before auth completed
+      // (channel:join events may have arrived before userAddress was set)
+      for (const room of socket.rooms) {
+        if (room === socket.id) continue;
+        const alreadyMember = db.select().from(channelMembers)
+          .where(and(eq(channelMembers.channelId, room), eq(channelMembers.userAddress, address)))
+          .get();
+        if (!alreadyMember) {
+          db.insert(channelMembers).values({ channelId: room, userAddress: address }).run();
+        }
+        const members = getChannelMembers(room);
+        io.to(room).emit('channel:members', { channelId: room, members });
+      }
+
       console.log(`[socket] ${displayName} (${address.slice(0, 8)}...) ${process.env.SKIP_AUTH === 'true' ? 'dev auth (SKIP_AUTH)' : 'SIWE verified'} & connected`);
     });
 
