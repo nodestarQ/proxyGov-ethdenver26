@@ -17,7 +17,7 @@ router.get('/user/:address', (req, res) => {
 
   res.json({
     exists: true,
-    profileSetup: !!user.avatarUrl, // avatar chosen = profile was set up
+    profileSetup: !!user.displayName, // display name set = profile was set up
     address: user.address,
     displayName: user.displayName,
     avatarUrl: user.avatarUrl

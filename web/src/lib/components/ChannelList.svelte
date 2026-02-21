@@ -15,13 +15,14 @@
   }
   let { onSelectChannel, onOpenTwin, onOpenSettings }: Props = $props();
 
-  const EMOJI_AVATARS = [
-    '🦊', '🐺', '🦁', '🐸', '🐙',
-    '🤖', '👾', '🛸', '🌀', '💎',
-    '🔮', '🧿', '⚡', '🌿', '🎭',
-    '🗿', '🏴‍☠️', '🧬', '🪐', '🎲',
-  ];
-  const isEmoji = $derived(EMOJI_AVATARS.includes(profile.avatarUrl));
+  const initials = $derived(
+    profile.displayName
+      .split(/\s+/)
+      .map(w => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?'
+  );
 
   async function handleCatchUp(e: Event, channelId: string) {
     e.stopPropagation();
@@ -62,12 +63,10 @@
                hover:border-text-muted transition-colors"
         aria-label="Settings"
       >
-        {#if profile.avatarUrl && !isEmoji}
+        {#if profile.avatarUrl}
           <img src={profile.avatarUrl} alt="" class="w-full h-full object-cover" />
-        {:else if isEmoji}
-          <span class="text-lg">{profile.avatarUrl}</span>
         {:else}
-          <span class="text-xs text-text-muted">{profile.displayName.charAt(0).toUpperCase()}</span>
+          <span class="text-xs font-semibold text-text-muted">{initials}</span>
         {/if}
       </button>
     </div>

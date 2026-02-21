@@ -10,31 +10,23 @@
   }
   let { onBack, onLogout }: Props = $props();
 
-  const AVATARS = [
-    '🦊', '🐺', '🦁', '🐸', '🐙',
-    '🤖', '👾', '🛸', '🌀', '💎',
-    '🔮', '🧿', '⚡', '🌿', '🎭',
-    '🗿', '🏴‍☠️', '🧬', '🪐', '🎲',
-  ];
-
   // Pre-populate from current profile
   let username = $state(profile.displayName);
-  let selectedAvatar = $state(AVATARS.includes(profile.avatarUrl) ? profile.avatarUrl : '');
-  let customAvatarUrl = $state(
-    profile.avatarUrl && !AVATARS.includes(profile.avatarUrl) ? profile.avatarUrl : ''
-  );
+  let customAvatarUrl = $state(profile.avatarUrl || '');
   let saving = $state(false);
   let saved = $state(false);
   let error = $state('');
 
-  const avatarPreview = $derived(customAvatarUrl || selectedAvatar);
-  const canSubmit = $derived(username.trim().length >= 2 && avatarPreview);
-
-  function selectAvatar(emoji: string) {
-    selectedAvatar = emoji;
-    customAvatarUrl = '';
-    saved = false;
-  }
+  const avatarPreview = $derived(customAvatarUrl);
+  const canSubmit = $derived(username.trim().length >= 2);
+  const initials = $derived(
+    username.trim()
+      .split(/\s+/)
+      .map(w => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?'
+  );
 
   function handleFileUpload(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -55,7 +47,6 @@
     const reader = new FileReader();
     reader.onload = () => {
       customAvatarUrl = reader.result as string;
-      selectedAvatar = '';
     };
     reader.readAsDataURL(file);
   }
@@ -99,37 +90,17 @@
   <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6">
     <!-- Avatar Preview -->
     <div class="flex flex-col items-center gap-3">
-      <div class="w-20 h-20 rounded-full border-2 border-border bg-bg-surface flex items-center justify-center overflow-hidden">
+      <div class="w-20 h-20 rounded-full border-2 border-border bg-bg-elevated flex items-center justify-center overflow-hidden">
         {#if customAvatarUrl}
           <img src={customAvatarUrl} alt="Avatar" class="w-full h-full object-cover" />
-        {:else if selectedAvatar}
-          <span class="text-4xl">{selectedAvatar}</span>
         {:else}
-          <span class="text-text-muted text-sm">?</span>
+          <span class="text-xl font-semibold text-text-muted">{initials}</span>
         {/if}
       </div>
       <label class="text-xs text-text-muted underline cursor-pointer hover:text-text-secondary transition-colors">
-        Upload photo
+        {customAvatarUrl ? 'Change photo' : 'Upload photo'}
         <input type="file" accept="image/*" class="hidden" onchange={handleFileUpload} />
       </label>
-    </div>
-
-    <!-- Avatar Grid -->
-    <div>
-      <p class="text-xs text-text-muted mb-2">Or pick an avatar</p>
-      <div class="grid grid-cols-5 gap-2">
-        {#each AVATARS as emoji}
-          <button
-            onclick={() => selectAvatar(emoji)}
-            class="w-full aspect-square rounded-lg border flex items-center justify-center text-2xl transition-all
-                   {selectedAvatar === emoji
-                     ? 'border-text-primary bg-text-primary/10 scale-110'
-                     : 'border-border bg-bg-surface hover:bg-bg-hover'}"
-          >
-            {emoji}
-          </button>
-        {/each}
-      </div>
     </div>
 
     <!-- Username Input -->
