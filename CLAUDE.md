@@ -37,7 +37,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 
 ## Key Tech Decisions
 
-- **Port 3002** for backend (3000 is occupied on dev machine)
+- **Port 3002** for backend dev (3000 is occupied on dev machine), **port 3004** in production (3002 occupied on VPS)
 - **Express v5** - uses `/{*path}` syntax for catch-all routes (not `*`)
 - **Svelte 5 runes** - stores use `$state`, `$derived`, `$effect` (not legacy stores)
 - **adapter-static** - SvelteKit builds to static files, served by backend in prod

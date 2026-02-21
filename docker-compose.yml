@@ -2,10 +2,10 @@ services:
   backend:
     build: ./backend
     ports:
-      - "3002:3002"
+      - "3004:3004"
     env_file: .env
     environment:
-      - PORT=3002
+      - PORT=3004
       - AI_AGENT_URL=http://ai-agent:3001
     volumes:
       - ./web/build:/app/public
