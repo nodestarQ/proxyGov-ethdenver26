@@ -30,7 +30,7 @@ export const messages = sqliteTable('messages', {
   isTwin: integer('is_twin', { mode: 'boolean' }).default(false).notNull(),
   type: text('type', { enum: ['text', 'swap-proposal', 'poll', 'summary', 'opportunity', 'system'] }).default('text').notNull(),
   content: text('content').notNull(),
-  reactions: text('reactions').default('{}').notNull(), // JSON string
+  signal: text('signal').default('{"up":[],"down":[]}').notNull(), // JSON string
   timestamp: text('timestamp').notNull()
 });
 

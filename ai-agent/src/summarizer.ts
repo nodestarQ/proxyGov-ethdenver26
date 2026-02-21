@@ -12,6 +12,7 @@ interface MessageForSummary {
   isTwin: boolean;
   timestamp: string;
   type?: string;
+  signalScore?: number;
 }
 
 interface PreviousContext {
@@ -36,7 +37,7 @@ export async function summarizeConversation(
   timeRange: { from: string; to: string };
 }> {
   const conversationText = messages
-    .map(m => `[${m.timestamp}] ${m.sender}${m.isTwin ? ' (AI Twin)' : ''}: ${m.content}`)
+    .map(m => `[${m.timestamp}]${m.signalScore ? ` [signal:${m.signalScore > 0 ? '+' : ''}${m.signalScore}]` : ''} ${m.sender}${m.isTwin ? ' (AI Twin)' : ''}: ${m.content}`)
     .join('\n');
 
   const interests = Array.isArray(userInterests) ? userInterests.join(', ') : userInterests || 'general governance';
@@ -51,6 +52,8 @@ You have a PREVIOUS summary of this channel that covered ${previousContext.messa
 - Previous action items: ${previousContext.actionItems.join(', ')}
 - Previously mentioned tokens: ${previousContext.mentionedTokens.join(', ')}
 
+Messages tagged with [signal:+N] were upvoted by the community and should be weighted more heavily. Messages with [signal:-N] were downvoted and are lower priority.
+
 Now incorporate the NEW messages below into an updated, consolidated summary. Merge topics, update action items (remove completed ones, add new ones), and combine token mentions. Return ONLY valid JSON with this structure:
 {
   "summary": "2-3 sentence consolidated summary covering both previous context and new messages",
@@ -59,7 +62,7 @@ Now incorporate the NEW messages below into an updated, consolidated summary. Me
   "mentionedTokens": ["ETH", "UNI"]
 }`;
   } else {
-    systemPrompt = `You summarize DAO chat conversations. The user's interests are: ${interests}. Focus on what's relevant to them. Return ONLY valid JSON with this structure:
+    systemPrompt = `You summarize DAO chat conversations. The user's interests are: ${interests}. Focus on what's relevant to them. Messages tagged with [signal:+N] were upvoted by the community and should be weighted more heavily. Messages with [signal:-N] were downvoted and are lower priority. Return ONLY valid JSON with this structure:
 {
   "summary": "2-3 sentence summary",
   "keyTopics": ["topic1", "topic2"],

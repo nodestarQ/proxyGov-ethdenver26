@@ -19,7 +19,7 @@ router.get('/messages', (req, res) => {
 
   const result = rows.map(m => ({
     ...m,
-    reactions: JSON.parse(m.reactions),
+    signal: JSON.parse(m.signal),
     isTwin: Boolean(m.isTwin)
   }));
 
@@ -104,7 +104,8 @@ router.post('/summarize', async (req, res) => {
     content: m.content,
     isTwin: Boolean(m.isTwin),
     timestamp: m.timestamp,
-    type: m.type
+    type: m.type,
+    signalScore: (() => { const s = JSON.parse(m.signal); return s.up.length - s.down.length; })()
   }));
 
   try {

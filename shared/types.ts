@@ -20,7 +20,7 @@ export interface Message {
   isTwin: boolean;         // sent by AI twin on behalf of owner
   type: MessageType;
   content: string;         // text or JSON payload
-  reactions: Record<string, string[]>; // emoji → [addresses]
+  signal: { up: string[]; down: string[] }; // addresses that voted up/down
   timestamp: string;
 }
 
@@ -101,7 +101,7 @@ export interface PollOption {
 // ─── Socket.IO Events ───────────────────────────────────────────
 export interface ServerToClientEvents {
   'message:new': (message: Message) => void;
-  'message:reaction': (data: { messageId: string; emoji: string; address: string; action: 'add' | 'remove' }) => void;
+  'message:signal': (data: { messageId: string; vote: 'up' | 'down'; address: string; action: 'add' | 'remove' }) => void;
   'user:join': (user: User) => void;
   'user:leave': (address: string) => void;
   'user:status': (data: { address: string; status: User['status'] }) => void;
@@ -113,7 +113,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
   'message:send': (data: { channelId: string; content: string; type?: MessageType }) => void;
-  'message:react': (data: { messageId: string; emoji: string }) => void;
+  'message:signal': (data: { messageId: string; vote: 'up' | 'down' }) => void;
   'channel:join': (channelId: string) => void;
   'channel:leave': (channelId: string) => void;
   'user:authenticate': (data: { address: string; signature: string; message: string }) => void;

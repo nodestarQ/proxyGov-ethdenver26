@@ -20,6 +20,7 @@ interface MessageContext {
   content: string;
   isTwin: boolean;
   timestamp: string;
+  signalScore?: number;
 }
 
 export function buildSystemPrompt(config: TwinConfig, context: { channelId: string; memberCount: number }): string {
@@ -41,6 +42,7 @@ RULES:
 - Don't make commitments or final decisions beyond your autonomous cap on behalf of ${name}.
 - Keep replies short and natural -- this is a group chat, not an essay.
 - Channel: #${context.channelId}, Members online: ${context.memberCount}
+- Messages with higher signal scores are considered more important by the community. Pay more attention to those.
 
 IMPORTANT: Write like you're chatting casually. No markdown, no headers, no bullet points. Just talk like ${name} would.`;
 }
@@ -69,7 +71,7 @@ export async function generateResponse(
 
   const conversationHistory = recentMessages.slice(-15).map(m => ({
     role: (m.sender === config.ownerAddress || m.isTwin) ? 'assistant' as const : 'user' as const,
-    content: `[${m.sender}${m.isTwin ? ' (AI Twin)' : ''}]: ${m.content}`
+    content: `${m.signalScore ? `[signal:${m.signalScore > 0 ? '+' : ''}${m.signalScore}] ` : ''}[${m.sender}${m.isTwin ? ' (AI Twin)' : ''}]: ${m.content}`
   }));
 
   conversationHistory.push({

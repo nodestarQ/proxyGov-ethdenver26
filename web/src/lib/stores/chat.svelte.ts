@@ -81,9 +81,9 @@ export const chat = {
     });
   },
 
-  addReaction(messageId: string, emoji: string) {
+  addSignal(messageId: string, vote: 'up' | 'down') {
     const socket = getSocket();
-    socket.emit('message:react', { messageId, emoji });
+    socket.emit('message:signal', { messageId, vote });
   },
 
   bindSocket() {
@@ -102,19 +102,19 @@ export const chat = {
       }
     });
 
-    socket.on('message:reaction', ({ messageId, emoji, address, action }) => {
+    socket.on('message:signal', ({ messageId, vote, address, action }) => {
       state.messages = state.messages.map(m => {
         if (m.id !== messageId) return m;
-        const reactions = { ...m.reactions };
-        const list = reactions[emoji] ? [...reactions[emoji]] : [];
-        if (action === 'add' && !list.includes(address)) {
-          list.push(address);
-        } else if (action === 'remove') {
-          const idx = list.indexOf(address);
-          if (idx >= 0) list.splice(idx, 1);
+        const signal = { ...m.signal, up: [...m.signal.up], down: [...m.signal.down] };
+        if (action === 'remove') {
+          signal[vote] = signal[vote].filter(a => a !== address);
+        } else {
+          // Remove from opposite first
+          const opposite = vote === 'up' ? 'down' : 'up';
+          signal[opposite] = signal[opposite].filter(a => a !== address);
+          if (!signal[vote].includes(address)) signal[vote].push(address);
         }
-        reactions[emoji] = list;
-        return { ...m, reactions };
+        return { ...m, signal };
       });
     });
 

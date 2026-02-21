@@ -41,7 +41,7 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
             isTwin: false,
             type: 'system',
             content: 'Signature verification failed. Please reconnect.',
-            reactions: {},
+            signal: { up: [], down: [] },
             timestamp: new Date().toISOString()
           });
           socket.disconnect(true);
@@ -134,14 +134,14 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
         isTwin: false,
         type: type ?? 'text',
         content,
-        reactions: {},
+        signal: { up: [], down: [] },
         timestamp: new Date().toISOString()
       };
 
       // Persist
       db.insert(messages).values({
         ...msg,
-        reactions: JSON.stringify(msg.reactions),
+        signal: JSON.stringify(msg.signal),
         isTwin: false
       }).run();
 
@@ -157,29 +157,32 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       await checkTwinResponses(io, channelId, msg);
     });
 
-    socket.on('message:react', ({ messageId, emoji }) => {
+    socket.on('message:signal', ({ messageId, vote }) => {
       if (!userAddress) return;
 
       const msg = db.select().from(messages).where(eq(messages.id, messageId)).get();
       if (!msg) return;
 
-      const reactions: Record<string, string[]> = JSON.parse(msg.reactions);
-      const list = reactions[emoji] ?? [];
-      const idx = list.indexOf(userAddress);
+      const signal: { up: string[]; down: string[] } = JSON.parse(msg.signal);
+      const opposite = vote === 'up' ? 'down' : 'up';
 
+      // Remove from opposite array if present
+      signal[opposite] = signal[opposite].filter(a => a !== userAddress);
+
+      // Toggle: if already in the voted array, remove (toggle off); otherwise add
+      const idx = signal[vote].indexOf(userAddress);
       let action: 'add' | 'remove';
       if (idx >= 0) {
-        list.splice(idx, 1);
+        signal[vote].splice(idx, 1);
         action = 'remove';
       } else {
-        list.push(userAddress);
+        signal[vote].push(userAddress);
         action = 'add';
       }
-      reactions[emoji] = list;
 
-      db.update(messages).set({ reactions: JSON.stringify(reactions) }).where(eq(messages.id, messageId)).run();
+      db.update(messages).set({ signal: JSON.stringify(signal) }).where(eq(messages.id, messageId)).run();
 
-      io.to(msg.channelId).emit('message:reaction', { messageId, emoji, address: userAddress, action });
+      io.to(msg.channelId).emit('message:signal', { messageId, vote, address: userAddress, action });
     });
 
     socket.on('user:status', (status) => {
@@ -269,11 +272,11 @@ async function handleSlashCommand(
         isTwin: false,
         type: 'swap-proposal',
         content: payload,
-        reactions: {},
+        signal: { up: [], down: [] },
         timestamp: new Date().toISOString()
       };
 
-      db.insert(messages).values({ ...msg, reactions: '{}', isTwin: false }).run();
+      db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
       io.to(channelId).emit('message:new', msg);
     } catch (err) {
       console.error('[swap] Error fetching quote:', err);
@@ -311,11 +314,11 @@ async function handleSlashCommand(
           isTwin: false,
           type: 'poll',
           content: JSON.stringify(poll),
-          reactions: {},
+          signal: { up: [], down: [] },
           timestamp: new Date().toISOString()
         };
 
-        db.insert(messages).values({ ...msg, reactions: '{}', isTwin: false }).run();
+        db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
         io.to(channelId).emit('message:new', msg);
       }
     }
@@ -378,7 +381,8 @@ async function checkTwinResponses(
               sender: m.senderName,
               content: m.content,
               isTwin: m.isTwin,
-              timestamp: m.timestamp
+              timestamp: m.timestamp,
+              signalScore: (() => { const s = JSON.parse(m.signal); return s.up.length - s.down.length; })()
             })),
             channelId,
             memberCount: memberRows.length
@@ -397,11 +401,11 @@ async function checkTwinResponses(
             isTwin: true,
             type: 'text',
             content: response,
-            reactions: {},
+            signal: { up: [], down: [] },
             timestamp: new Date().toISOString()
           };
 
-          db.insert(messages).values({ ...twinMsg, reactions: '{}' }).run();
+          db.insert(messages).values({ ...twinMsg, signal: '{"up":[],"down":[]}' }).run();
           // Small delay for natural feel
           setTimeout(() => {
             io.to(channelId).emit('message:new', twinMsg);

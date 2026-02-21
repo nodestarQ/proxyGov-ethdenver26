@@ -41,7 +41,5 @@ export const DEFAULT_CHANNELS = [
   { id: 'governance', name: 'governance', description: 'Governance proposals and votes' }
 ];
 
-export const REACTION_EMOJIS = ['👍', '👎', '🔥', '🤔', '🚀'];
-
 export const BACKEND_URL = import.meta.env.DEV ? '' : '';
 export const SOCKET_URL = import.meta.env.DEV ? 'http://localhost:3002' : '';
