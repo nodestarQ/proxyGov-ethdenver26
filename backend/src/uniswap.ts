@@ -86,7 +86,7 @@ export async function getQuote(tokenInSymbol: string, tokenOutSymbol: string, am
         swapper: env().DAO_WALLET_ADDRESS || '0x0000000000000000000000000000000000000000',
         urgency: 'normal',
         slippageTolerance: 0.5,
-        routingPreference: 'CLASSIC'
+        routingPreference: 'BEST_PRICE'
       })
     });
 
@@ -391,7 +391,7 @@ export async function executeSwap(
         swapper: env().DAO_WALLET_ADDRESS,
         urgency: 'normal',
         slippageTolerance: 0.5,
-        routingPreference: 'CLASSIC'
+        routingPreference: 'BEST_PRICE'
       })
     });
 
