@@ -70,8 +70,12 @@
       </div>
     {:else}
       <div class="py-1">
-        {#each chat.messages as message (message.id)}
-          <MessageBubble {message} />
+        {#each chat.messages as message, i (message.id)}
+          {@const prev = chat.messages[i - 1]}
+          {@const next = chat.messages[i + 1]}
+          {@const isFirstInGroup = !prev || prev.sender !== message.sender || prev.type === 'system'}
+          {@const isLastInGroup = !next || next.sender !== message.sender || next.type === 'system'}
+          <MessageBubble {message} {isFirstInGroup} {isLastInGroup} />
         {/each}
       </div>
     {/if}
