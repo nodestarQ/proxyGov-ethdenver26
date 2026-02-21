@@ -94,18 +94,11 @@
               <p class="text-xs text-text-muted mt-0.5">{channel.description}</p>
             {/if}
           </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            {#if chat.unreadCounts[channel.id]}
-              <span class="min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-text-primary text-bg text-[11px] font-bold">
-                {chat.unreadCounts[channel.id]}
-              </span>
-            {/if}
-            <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+          <svg class="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
         </button>
-        <!-- Catch up button -->
+        <!-- Catch up -->
         <button
           onclick={(e) => {
             e.stopPropagation();
@@ -116,20 +109,26 @@
             }
           }}
           disabled={chat.catchUpLoading[channel.id]}
-          class="flex-shrink-0 px-4 rounded-xl bg-bg-surface border border-border/30
-                 text-[11px] font-medium transition-colors whitespace-nowrap
-                 disabled:opacity-50 disabled:cursor-not-allowed
-                 {chat.unreadCounts[channel.id]
-                   ? 'text-twin hover:bg-twin/10'
-                   : 'text-text-muted hover:bg-bg-hover'}"
+          class="w-20 flex-shrink-0 rounded-xl bg-bg-surface border border-border/30 overflow-hidden
+                 flex flex-col
+                 transition-colors whitespace-nowrap
+                 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {#if chat.catchUpLoading[channel.id]}
-            ...
-          {:else if chat.catchUpExpanded[channel.id]}
-            Close
-          {:else}
-            Catch up
-          {/if}
+          <span class="flex-1 flex items-center justify-center text-[11px] font-bold
+                 {chat.unreadCounts[channel.id] ? 'bg-text-primary text-bg' : 'text-text-muted'}">
+            {chat.unreadCounts[channel.id] ?? 0}
+          </span>
+          <span class="w-full h-px {chat.unreadCounts[channel.id] ? 'bg-bg/20' : 'bg-border/30'}"></span>
+          <span class="flex-1 flex items-center justify-center text-[11px] font-medium
+                 {chat.unreadCounts[channel.id] ? 'text-twin hover:bg-twin/10' : 'text-text-muted hover:bg-bg-hover'}">
+            {#if chat.catchUpLoading[channel.id]}
+              ...
+            {:else if chat.catchUpExpanded[channel.id]}
+              Close
+            {:else}
+              Catch up
+            {/if}
+          </span>
         </button>
       </div>
       <!-- Accordion: summary card -->
