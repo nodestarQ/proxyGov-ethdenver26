@@ -14,7 +14,7 @@
 <aside class="w-60 border-r border-border bg-bg-surface flex flex-col h-full">
   <!-- Logo -->
   <div class="p-4 border-b border-border">
-    <h1 class="text-lg font-bold text-accent text-glow tracking-tight">proxyGov</h1>
+    <h1 class="text-lg font-bold text-accent text-glow tracking-tight">TwinGovernance</h1>
     <p class="text-xs text-text-muted mt-0.5">DAO Twin Chat</p>
   </div>
 

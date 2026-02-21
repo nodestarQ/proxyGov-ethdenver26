@@ -1,4 +1,4 @@
-# proxyGov - ETHDenver 2026 BUIDLathon
+# TwinGovernance - ETHDenver 2026 BUIDLathon
 
 DAO coordination chat app where each member has a human presence + a Twin (AI representation) that stays active when the human is away. The Twin follows conversations, responds on the user's behalf based on their personality/interests, and can autonomously sign off on DAO proposals (e.g. treasury swaps requiring multisig approval) within a user-defined spending cap.
 
@@ -43,7 +43,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 - **adapter-static** - SvelteKit builds to static files, served by backend in prod
 - **In-memory SQLite** - resets on restart, seed data auto-loads
 - **pnpm workspaces** - monorepo with `pnpm-workspace.yaml`
-- **better-sqlite3** requires native rebuild: `pnpm --filter proxygov-backend rebuild better-sqlite3`
+- **better-sqlite3** requires native rebuild: `pnpm --filter twingovernance-backend rebuild better-sqlite3`
 
 ## UI / UX
 
@@ -88,7 +88,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 ## Stores (Svelte 5 runes)
 
 - `wallet.svelte.ts` - address, connected, chainId, signature, siweMessage
-- `chat.svelte.ts` - messages, channels, activeChannel, members, unreadCounts, viewingChat flag, catchUpSummaries/Loading/Expanded (per-channel rolling context)
+- `chat.svelte.ts` - messages, channels, activeChannel, members, unreadCounts, viewingChat flag, catchUpSummaries/Loading/Expanded (per-channel rolling context), typingUsers (tracks human vs twin typing separately)
 - `twin.svelte.ts` - twin config, load/save/updateField
 - `profile.svelte.ts` - displayName, avatarUrl (set on login, updated from settings)
 
@@ -116,9 +116,11 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 
 Typed in `shared/types.ts` - `ServerToClientEvents` and `ClientToServerEvents`.
 
-Client → Server: `user:authenticate` (address, signature, message), `channel:join`, `channel:leave`, `message:send`, `message:react`, `user:status`, `poll:vote`
+Client → Server: `user:authenticate` (address, signature, message), `channel:join`, `channel:leave`, `message:send`, `message:react`, `user:status`, `poll:vote`, `user:typing`, `user:stop-typing`
 
-Server → Client: `message:new`, `message:reaction`, `user:join`, `user:leave`, `user:status`, `twin:status`, `poll:update`, `price:update`, `channel:members`
+Server → Client: `message:new`, `message:signal`, `user:join`, `user:leave`, `user:status`, `twin:status`, `poll:update`, `price:update`, `channel:members`, `user:typing` (with optional `isTwin` flag), `user:stop-typing` (with optional `isTwin` flag)
+
+Typing events include an `isTwin?: boolean` field on server→client payloads. Twin typing is emitted by the backend during AI agent processing in `checkTwinResponses`. The frontend tracks human and twin typing separately and renders twin typing with purple styling and a TWIN badge.
 
 All channels are joined on connect (not just active) so unread counts work across channels.
 

@@ -104,7 +104,7 @@
       <div class="flex-1 flex items-center justify-center px-6" in:fade={{ duration: 200 }}>
         <div class="text-center space-y-6 w-full">
           <div class="crt-border rounded-lg p-8 bg-bg-surface crt-glow">
-            <h1 class="text-4xl font-bold text-text-primary tracking-tight mb-1">proxyGov</h1>
+            <h1 class="text-4xl font-bold text-text-primary tracking-tight mb-1">TwinGovernance</h1>
             <p class="text-text-secondary text-sm mb-6">Governance, without timezones</p>
             <WalletConnect />
           </div>

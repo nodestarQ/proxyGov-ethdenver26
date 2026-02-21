@@ -80,7 +80,7 @@ setInterval(async () => {
 server.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════╗
-║        proxyGov Backend              ║
+║        TwinGovernance Backend              ║
 ║        Port: ${PORT}                    ║
 ║        DB: SQLite (in-memory)        ║
 ╚══════════════════════════════════════╝

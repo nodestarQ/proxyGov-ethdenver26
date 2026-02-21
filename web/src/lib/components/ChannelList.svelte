@@ -54,7 +54,7 @@
   <header class="px-4 py-3 border-b border-border bg-bg-surface">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-lg font-bold text-text-primary tracking-tight">proxyGov</h1>
+        <h1 class="text-lg font-bold text-text-primary tracking-tight">TwinGovernance</h1>
         <p class="text-[11px] text-text-muted">Governance, without timezones</p>
       </div>
       <!-- Profile avatar → settings -->

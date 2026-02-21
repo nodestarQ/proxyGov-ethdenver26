@@ -74,7 +74,7 @@ export const wallet = {
         `${window.location.host} wants you to sign in with your Ethereum account:`,
         address,
         '',
-        'Sign in to proxyGov DAO Twin Chat',
+        'Sign in to TwinGovernance DAO Twin Chat',
         '',
         `URI: ${window.location.origin}`,
         'Version: 1',

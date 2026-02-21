@@ -1,15 +1,15 @@
 {
-  "name": "proxygov-ethdenver26",
+  "name": "twingovernance-ethdenver26",
   "private": true,
   "scripts": {
     "dev": "concurrently -n web,backend,agent -c cyan,green,magenta \"pnpm dev:web\" \"pnpm dev:backend\" \"pnpm dev:agent\"",
-    "dev:web": "pnpm --filter proxygov-web dev",
-    "dev:backend": "pnpm --filter proxygov-backend dev",
-    "dev:agent": "pnpm --filter proxygov-ai-agent dev",
+    "dev:web": "pnpm --filter twingovernance-web dev",
+    "dev:backend": "pnpm --filter twingovernance-backend dev",
+    "dev:agent": "pnpm --filter twingovernance-ai-agent dev",
     "build": "pnpm build:web",
-    "build:web": "pnpm --filter proxygov-web build",
-    "build:backend": "pnpm --filter proxygov-backend build",
-    "build:agent": "pnpm --filter proxygov-ai-agent build",
+    "build:web": "pnpm --filter twingovernance-web build",
+    "build:backend": "pnpm --filter twingovernance-backend build",
+    "build:agent": "pnpm --filter twingovernance-ai-agent build",
     "install:all": "pnpm install",
     "docker:up": "pnpm build:web && docker compose up -d --build",
     "docker:down": "docker compose down"

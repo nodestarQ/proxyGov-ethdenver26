@@ -29,7 +29,7 @@ app.use('/api', analyzeRouter);
 app.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════╗
-║        proxyGov AI Agent             ║
+║        TwinGovernance AI Agent             ║
 ║        Port: ${PORT}                    ║
 ║        Model: Claude Sonnet          ║
 ╚══════════════════════════════════════╝
