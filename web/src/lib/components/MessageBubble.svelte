@@ -8,6 +8,8 @@
   import PollCard from './PollCard.svelte';
   import SummaryCard from './SummaryCard.svelte';
   import OpportunityAlert from './OpportunityAlert.svelte';
+  import PriceCard from './PriceCard.svelte';
+  import DaoBalanceCard from './DaoBalanceCard.svelte';
 
   interface Props {
     message: Message;
@@ -26,8 +28,8 @@
   );
 
   const signalClasses = $derived(
-    signalScore >= 2 ? 'font-medium ring-2 ring-green-500/30 shadow-sm shadow-green-500/10'
-    : signalScore >= 1 ? 'ring-1 ring-green-500/20'
+    signalScore >= 2 ? 'font-medium border-2 border-text-primary'
+    : signalScore >= 1 ? 'border-2 border-text-primary/50'
     : signalScore <= -2 ? 'opacity-40'
     : signalScore <= -1 ? 'opacity-60'
     : ''
@@ -43,14 +45,11 @@
 
   const groupedBubbleRounding = $derived(
     isOwn
-      ? isFirstInGroup && !isLastInGroup ? 'rounded-br-md'
-        : !isFirstInGroup && !isLastInGroup ? 'rounded-br-md'
-        : !isFirstInGroup && isLastInGroup ? 'rounded-br-sm'
-        : 'rounded-br-sm' // solo — default
-      : isFirstInGroup && !isLastInGroup ? 'rounded-bl-xl'
-        : !isFirstInGroup && !isLastInGroup ? 'rounded-bl-md'
-        : !isFirstInGroup && isLastInGroup ? 'rounded-bl-sm'
-        : 'rounded-bl-sm' // solo — default
+      ? isFirstInGroup && !isLastInGroup ? 'rounded-br-[4px]'
+        : !isFirstInGroup && !isLastInGroup ? 'rounded-br-[4px]'
+        : !isFirstInGroup && isLastInGroup ? 'rounded-br-[4px]'
+        : '' // solo
+      : 'rounded-bl-[4px]'
   );
 
   type Segment = { text: string; isMention: boolean };
@@ -92,15 +91,19 @@
   </div>
 {:else if message.type === 'swap-proposal'}
   <SwapVoteCard payload={JSON.parse(message.content)} />
+{:else if message.type === 'price'}
+  <PriceCard payload={JSON.parse(message.content)} />
+{:else if message.type === 'dao-balance'}
+  <DaoBalanceCard payload={JSON.parse(message.content)} />
 {:else}
-  <div class="{!isFirstInGroup ? 'pt-0.5' : 'pt-1'} px-3 pb-0" style="max-width: 85%{isOwn ? '; margin-left: auto' : ''}">
+  <div class="{!isFirstInGroup ? 'pt-0.5' : 'pt-4'} px-3 pb-0" style="max-width: 85%{isOwn ? '; margin-left: auto' : ''}">
     {#if !isOwn}
       <!-- Avatar + bubble wrapper for others' messages -->
       <div class="flex items-end gap-1.5">
         <!-- Avatar column -->
         <div class="shrink-0 w-7 flex items-end">
           {#if isLastInGroup}
-            <div class="w-7 h-7 rounded-full overflow-hidden bg-bg-elevated border border-border flex items-center justify-center">
+            <div class="w-7 h-7 rounded-xs overflow-hidden bg-bg-elevated border border-border flex items-center justify-center">
               {#if senderAvatarUrl}
                 <img src={senderAvatarUrl} alt={message.senderName} class="w-full h-full object-cover" />
               {:else}
@@ -114,11 +117,11 @@
         <div class="min-w-0 flex-1">
           {#if isFirstInGroup}
             <div class="flex items-center gap-1.5 mb-0.5 px-1">
-              <span class="text-xs font-medium {message.isTwin ? 'text-twin' : 'text-text-secondary'}">
+              <span class="text-xs {message.isTwin ? 'font-bold text-text-primary' : 'font-medium text-text-secondary'}">
                 {message.senderName}
               </span>
               {#if message.isTwin}
-                <span class="text-[9px] px-1 py-px rounded bg-twin/20 text-twin font-medium">TWIN</span>
+                <span class="text-[9px] px-1 py-px rounded-xs bg-text-primary text-bg font-bold">TWIN</span>
               {/if}
             </div>
           {/if}
@@ -126,9 +129,9 @@
           <!-- Bubble + signal row -->
           <div class="flex items-stretch gap-1">
             <!-- Bubble -->
-            <div class="min-w-0 rounded-xl px-3 py-2 {signalClasses} {groupedBubbleRounding}
+            <div class="min-w-0 rounded-[18px] px-3 py-2 {signalClasses} {groupedBubbleRounding}
                         {message.isTwin
-                          ? 'bg-twin/10 border border-twin/20 text-text-primary'
+                          ? 'bg-transparent border border-dashed border-border/40 text-text-primary'
                           : 'bg-bg-surface border border-border/40 text-text-primary'}">
               <div class="text-[13px] leading-snug">
                 {#if message.type === 'poll'}
@@ -147,13 +150,13 @@
             </div>
 
             <!-- Signal voting pill -->
-            <div class="shrink-0 w-8 rounded-xl flex flex-col items-stretch
+            <div class="shrink-0 w-8 rounded-[18px] flex flex-col items-stretch
                         {message.isTwin
-                          ? 'bg-twin/10 border border-twin/20 text-text-primary'
+                          ? 'bg-transparent border border-dashed border-border/40 text-text-primary'
                           : 'bg-bg-surface border border-border/40 text-text-primary'}">
               <button
                 onclick={() => chat.addSignal(message.id, 'up')}
-                class="flex-1 flex items-center justify-center rounded-t-lg transition-colors
+                class="flex-1 flex items-center justify-center rounded-t-[18px] transition-colors
                        {userVote === 'up'
                          ? 'text-green-600 bg-green-500/15'
                          : 'text-text-muted/50 hover:text-green-600 hover:bg-green-500/10'}"
@@ -162,10 +165,10 @@
                   <path d="M8 4l4 5H4l4-5z"/>
                 </svg>
               </button>
-              <div class="h-px mx-1 {message.isTwin ? 'bg-twin/15' : 'bg-border/30'}"></div>
+              <div class="h-px mx-1 bg-border/30"></div>
               <button
                 onclick={() => chat.addSignal(message.id, 'down')}
-                class="flex-1 flex items-center justify-center rounded-b-lg transition-colors
+                class="flex-1 flex items-center justify-center rounded-b-[18px] transition-colors
                        {userVote === 'down'
                          ? 'text-red-500 bg-red-500/15'
                          : 'text-text-muted/50 hover:text-red-500 hover:bg-red-500/10'}"
@@ -183,12 +186,12 @@
       <div class="flex flex-col items-end">
         {#if message.isTwin && isFirstInGroup}
           <div class="flex items-center gap-1.5 mb-0.5 px-1">
-            <span class="text-[9px] px-1 py-px rounded bg-twin/20 text-twin font-medium">TWIN</span>
+            <span class="text-[9px] px-1 py-px rounded-xs bg-text-primary text-bg font-bold">TWIN</span>
           </div>
         {/if}
-        <div class="min-w-0 rounded-xl px-3 py-2 {signalClasses} {groupedBubbleRounding}
+        <div class="min-w-0 rounded-[18px] px-3 py-2 {signalClasses} {groupedBubbleRounding}
                     {message.isTwin
-                      ? 'bg-twin/15 border border-twin/30 text-text-primary'
+                      ? 'bg-transparent border border-dashed border-border/40 text-text-primary'
                       : 'bg-text-primary text-bg'}">
           <div class="text-[13px] leading-snug">
             {#if message.type === 'poll'}

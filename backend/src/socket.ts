@@ -532,12 +532,56 @@ async function handleSlashCommand(
         io.to(channelId).emit('message:new', msg);
       }
     }
+  } else if (command === '/price' && parts.length >= 2) {
+    const symbol = parts[1].toUpperCase();
+    try {
+      const price = await getTokenPrice(symbol);
+      const tokenInfo = resolveToken(symbol);
+      const payload = {
+        symbol,
+        price,
+        address: tokenInfo?.address ?? '',
+        timestamp: new Date().toISOString()
+      };
+      const msg: Message = {
+        id: uuid(),
+        channelId,
+        sender: 'system',
+        senderName: 'System',
+        isTwin: false,
+        type: 'price',
+        content: JSON.stringify(payload),
+        signal: { up: [], down: [] },
+        timestamp: new Date().toISOString()
+      };
+      db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
+      io.to(channelId).emit('message:new', msg);
+    } catch (err) {
+      console.error('[price] Error fetching price:', err);
+      emitSystemMessage(io, channelId, `Failed to fetch price for ${symbol}.`);
+    }
   } else if (command === '/daobalance') {
     try {
       const balances = await getDaoBalances();
-      const lines = balances.map(b => `${b.symbol}: ${b.balance}`);
-      const daoAddr = process.env.DAO_WALLET_ADDRESS ?? 'not configured';
-      emitSystemMessage(io, channelId, `DAO Treasury (${daoAddr.slice(0, 6)}...${daoAddr.slice(-4)}):\n${lines.join('\n')}`);
+      const daoAddr = process.env.DAO_WALLET_ADDRESS ?? '';
+      const payload = {
+        address: daoAddr,
+        balances,
+        timestamp: new Date().toISOString()
+      };
+      const msg: Message = {
+        id: uuid(),
+        channelId,
+        sender: 'system',
+        senderName: 'System',
+        isTwin: false,
+        type: 'dao-balance',
+        content: JSON.stringify(payload),
+        signal: { up: [], down: [] },
+        timestamp: new Date().toISOString()
+      };
+      db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
+      io.to(channelId).emit('message:new', msg);
     } catch (err) {
       console.error('[balance] Error fetching balances:', err);
       emitSystemMessage(io, channelId, 'Failed to fetch DAO balances.');

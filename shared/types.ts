@@ -10,7 +10,7 @@ export interface User {
 }
 
 // ─── Messages ────────────────────────────────────────────────────
-export type MessageType = 'text' | 'swap-proposal' | 'poll' | 'summary' | 'opportunity' | 'system';
+export type MessageType = 'text' | 'swap-proposal' | 'poll' | 'summary' | 'opportunity' | 'system' | 'price' | 'dao-balance';
 
 export interface Message {
   id: string;

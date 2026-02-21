@@ -49,10 +49,14 @@
     }
   });
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages (only when count changes, not on signal updates)
+  let prevMessageCount = $state(0);
   $effect(() => {
-    chat.messages;
-    scrollToBottom();
+    const count = chat.messages.length;
+    if (count !== prevMessageCount) {
+      prevMessageCount = count;
+      scrollToBottom();
+    }
   });
 </script>
 

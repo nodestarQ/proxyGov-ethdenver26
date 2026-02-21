@@ -15,7 +15,6 @@
 
   const SLASH_COMMANDS = [
     { name: 'swap', description: 'Propose a token swap for DAO vote' },
-    { name: 'poll', description: 'Create a poll for the channel' },
     { name: 'price', description: 'Check token price' },
     { name: 'daobalance', description: 'Show DAO treasury balances' },
   ];
@@ -106,7 +105,21 @@
       return;
     }
 
-    // Beyond first word — only /swap has token autocomplete
+    // /price <token> — single token autocomplete
+    if (val.startsWith('/price ')) {
+      const afterPrice = val.slice(7);
+      const args = afterPrice.split(/\s+/).filter(Boolean);
+      if (args.length <= 1 && !afterPrice.includes(' ') || (args.length === 0)) {
+        slashMode = 'token-in';
+        slashQuery = args[0] || '';
+        slashSelectedIndex = 0;
+      } else {
+        slashMode = null;
+      }
+      return;
+    }
+
+    // Beyond first word — only /swap has further token autocomplete
     if (!val.startsWith('/swap ')) {
       slashMode = null;
       return;
@@ -158,14 +171,16 @@
     });
   }
 
-  function selectSlashToken(address: string) {
+  function selectSlashToken(address: string, symbol: string) {
+    const isPrice = inputValue.startsWith('/price ');
+    const value = isPrice ? symbol : address;
     const parts = inputValue.split(/\s+/);
     const endsWithSpace = inputValue.endsWith(' ');
 
     if (endsWithSpace) {
-      inputValue = inputValue + address + ' ';
+      inputValue = inputValue + value + ' ';
     } else {
-      parts[parts.length - 1] = address;
+      parts[parts.length - 1] = value;
       inputValue = parts.join(' ') + ' ';
     }
 
@@ -226,7 +241,8 @@
         if (slashMode === 'command') {
           selectSlashCommand((item as typeof SLASH_COMMANDS[number]).name);
         } else {
-          selectSlashToken((item as typeof TOKENS[number]).address);
+          const t = item as typeof TOKENS[number];
+          selectSlashToken(t.address, t.symbol);
         }
         return;
       }
@@ -297,7 +313,7 @@
           <button
             class="w-full px-3 py-2 flex items-center gap-2 text-left text-sm transition-colors
                    {i === slashSelectedIndex ? 'bg-bg-hover' : 'hover:bg-bg-hover'}"
-            onpointerdown={(e) => { e.preventDefault(); selectSlashToken(token.address); }}
+            onpointerdown={(e) => { e.preventDefault(); selectSlashToken(token.address, token.symbol); }}
           >
             <span class="text-text-primary font-bold">{token.symbol}</span>
             <span class="font-mono text-text-muted text-xs ml-auto">{token.address.slice(0, 6)}...{token.address.slice(-4)}</span>

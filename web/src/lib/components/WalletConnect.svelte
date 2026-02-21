@@ -16,14 +16,14 @@
   <button
     onclick={() => wallet.connect()}
     disabled={wallet.connecting}
-    class="px-4 py-2 border border-border text-text-primary rounded-full font-medium text-sm
-           hover:bg-bg-hover transition-colors
+    class="w-full px-4 py-2 border border-border bg-text-primary text-bg rounded-xs font-medium text-sm
+           hover:opacity-90 transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed"
   >
     {#if wallet.connecting}
       connecting...
     {:else}
-      Connect Wallet
+      Log in
     {/if}
   </button>
 {/if}

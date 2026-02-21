@@ -4,6 +4,7 @@ import { getSocket } from '../utils/socket-client.js';
 
 interface TwinState {
   config: TwinConfig | null;
+  savedConfig: TwinConfig | null;
   status: TwinStatus | null;
   loading: boolean;
   saving: boolean;
@@ -11,6 +12,7 @@ interface TwinState {
 
 let state = $state<TwinState>({
   config: null,
+  savedConfig: null,
   status: null,
   loading: false,
   saving: false
@@ -24,11 +26,19 @@ export const twin = {
   get loading() { return state.loading; },
   get saving() { return state.saving; },
   get enabled() { return state.config?.enabled ?? false; },
+  get hasChanges() {
+    if (!state.config || !state.savedConfig) return false;
+    return state.config.personality !== state.savedConfig.personality
+      || state.config.interests !== state.savedConfig.interests
+      || state.config.responseStyle !== state.savedConfig.responseStyle
+      || state.config.autonomousCapUsd !== state.savedConfig.autonomousCapUsd;
+  },
 
   async load(address: string) {
     state.loading = true;
     try {
       state.config = await api.getTwinConfig(address);
+      state.savedConfig = { ...state.config };
     } catch {
       // No config yet - use defaults
       state.config = {
@@ -42,6 +52,7 @@ export const twin = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      state.savedConfig = { ...state.config };
     } finally {
       state.loading = false;
     }
@@ -52,6 +63,7 @@ export const twin = {
     state.saving = true;
     try {
       state.config = await api.updateTwinConfig(address, state.config);
+      state.savedConfig = { ...state.config };
     } finally {
       state.saving = false;
     }

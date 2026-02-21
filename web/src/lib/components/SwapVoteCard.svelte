@@ -18,26 +18,18 @@
   );
   const canVote = $derived(payload.status === 'pending' && !hasVoted);
 
-  const statusColor = $derived(
-    payload.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-    : payload.status === 'executing' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-    : payload.status === 'executed' ? 'bg-green-500/20 text-green-400 border-green-500/30'
-    : payload.status === 'failed' ? 'bg-red-500/20 text-red-400 border-red-500/30'
-    : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-  );
-
   const statusLabel = $derived(payload.status.toUpperCase());
 
   const etherscanBase = 'https://sepolia.etherscan.io';
 </script>
 
 <div class="w-full flex justify-center px-3 py-1.5">
-  <div class="crt-border rounded-xl p-4 bg-bg-elevated w-full max-w-sm">
+  <div class="crt-border rounded-xs p-4 bg-bg-elevated w-full max-w-sm">
     <!-- Header -->
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/30 font-semibold tracking-wider">SWAP PROPOSAL</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full border font-medium {statusColor}">{statusLabel}</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-xs bg-text-primary text-bg font-bold tracking-wider">SWAP PROPOSAL</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-xs bg-text-primary text-bg font-bold">{statusLabel}</span>
       </div>
     </div>
 
@@ -82,9 +74,9 @@
         <span>{yesVotes} Yes / {noVotes} No</span>
         <span>Need {needed} of {payload.totalMembers}</span>
       </div>
-      <div class="w-full h-2 rounded-full bg-bg-surface border border-border/30 overflow-hidden">
+      <div class="w-full h-2 rounded-xs bg-bg-surface border border-border/30 overflow-hidden">
         <div
-          class="h-full rounded-full transition-all duration-500 {payload.status === 'executed' ? 'bg-green-500' : 'bg-green-500/70'}"
+          class="h-full rounded-xs transition-all duration-500 bg-text-primary"
           style="width: {progressPct}%"
         ></div>
       </div>
@@ -95,15 +87,15 @@
       <div class="flex gap-2 mb-3">
         <button
           onclick={() => chat.voteOnSwap(payload.proposalId, 'yes')}
-          class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors
-                 bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 active:bg-green-500/30"
+          class="flex-1 py-2 rounded-xs text-sm font-bold transition-colors
+                 bg-text-primary text-bg hover:opacity-90 active:opacity-80"
         >
           Vote Yes
         </button>
         <button
           onclick={() => chat.voteOnSwap(payload.proposalId, 'no')}
-          class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors
-                 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 active:bg-red-500/30"
+          class="flex-1 py-2 rounded-xs text-sm font-bold transition-colors
+                 bg-transparent border border-border text-text-primary hover:bg-bg-hover active:bg-bg-surface"
         >
           Vote No
         </button>
@@ -117,10 +109,11 @@
       <div class="border-t border-border/30 pt-2 space-y-1">
         {#each payload.votes as v}
           <div class="flex items-center gap-2 text-[11px]">
-            <span class="w-2 h-2 rounded-full {v.vote === 'yes' ? 'bg-green-500' : 'bg-red-500'}"></span>
+            <span class="font-bold text-text-primary w-5">{v.vote === 'yes' ? 'Yes' : 'No'}</span>
+            <span class="text-border/30">|</span>
             <span class="text-text-secondary">{v.voterName}</span>
             {#if v.isTwin}
-              <span class="text-[9px] px-1 py-px rounded bg-twin/20 text-twin font-medium">TWIN</span>
+              <span class="text-[9px] px-1 py-px rounded-xs bg-text-primary text-bg font-bold">TWIN</span>
             {/if}
           </div>
         {/each}
@@ -144,7 +137,7 @@
     <!-- Fail reason -->
     {#if payload.failReason && payload.status === 'failed'}
       <div class="mt-2 pt-2 border-t border-border/30">
-        <p class="text-[11px] text-red-400">{payload.failReason}</p>
+        <p class="text-[11px] text-danger">{payload.failReason}</p>
       </div>
     {/if}
   </div>

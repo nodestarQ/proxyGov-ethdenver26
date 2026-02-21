@@ -55,12 +55,12 @@
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-lg font-bold text-text-primary tracking-tight">TwinGovernance</h1>
-        <p class="text-[11px] text-text-muted">Governance, without timezones</p>
+        <p class="text-[11px] text-text-muted">Your Digital Twin for Governance</p>
       </div>
       <!-- Profile avatar → settings -->
       <button
         onclick={onOpenSettings}
-        class="w-9 h-9 rounded-full border border-border bg-bg-surface flex items-center justify-center overflow-hidden
+        class="w-9 h-9 rounded-xs border border-border bg-bg-surface flex items-center justify-center overflow-hidden
                hover:border-text-muted transition-colors"
         aria-label="Settings"
       >
@@ -78,18 +78,25 @@
     <p class="text-[11px] text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Channels</p>
     <div class="px-3 space-y-2">
     {#each chat.channels as channel}
-      <div class="flex items-stretch gap-2">
+      <div class="space-y-1">
         <!-- Chat button -->
         <button
           onclick={() => onSelectChannel(channel.id)}
-          class="flex-1 text-left px-4 py-3 flex items-center justify-between
-                 rounded-xl bg-bg-surface border border-border/30
-                 hover:bg-bg-hover active:bg-bg-elevated transition-colors min-w-0"
+          class="w-full text-left px-4 py-3 flex items-center justify-between
+                 rounded-xs bg-bg-surface border border-border/30
+                 hover:bg-bg-hover active:bg-bg-elevated transition-colors"
         >
           <div class="min-w-0">
-            <span class="text-sm font-medium text-text-primary">
-              <span class="text-text-muted">#</span> {channel.name}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-text-primary">
+                <span class="text-text-muted">#</span> {channel.name}
+              </span>
+              {#if chat.unreadCounts[channel.id]}
+                <span class="px-1.5 py-0.5 text-[10px] font-black bg-text-primary text-bg rounded-xs leading-none">
+                  {chat.unreadCounts[channel.id]}
+                </span>
+              {/if}
+            </div>
             {#if channel.description}
               <p class="text-xs text-text-muted mt-0.5">{channel.description}</p>
             {/if}
@@ -109,32 +116,24 @@
             }
           }}
           disabled={chat.catchUpLoading[channel.id]}
-          class="w-20 flex-shrink-0 rounded-xl bg-bg-surface border border-border/30 overflow-hidden
-                 flex flex-col
-                 transition-colors whitespace-nowrap
+          class="w-full py-2 rounded-xs bg-text-primary text-bg
+                 text-[11px] font-medium text-center
+                 hover:opacity-90 transition-colors
                  disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span class="flex-1 flex items-center justify-center text-[11px] font-bold
-                 {chat.unreadCounts[channel.id] ? 'bg-text-primary text-bg' : 'text-text-muted'}">
-            {chat.unreadCounts[channel.id] ?? 0}
-          </span>
-          <span class="w-full h-px {chat.unreadCounts[channel.id] ? 'bg-bg/20' : 'bg-border/30'}"></span>
-          <span class="flex-1 flex items-center justify-center text-[11px] font-medium
-                 {chat.unreadCounts[channel.id] ? 'text-twin hover:bg-twin/10' : 'text-text-muted hover:bg-bg-hover'}">
-            {#if chat.catchUpLoading[channel.id]}
-              ...
-            {:else if chat.catchUpExpanded[channel.id]}
-              Close
-            {:else}
-              Catch up
-            {/if}
-          </span>
+          {#if chat.catchUpLoading[channel.id]}
+            ...
+          {:else if chat.catchUpExpanded[channel.id]}
+            Close
+          {:else}
+            Catch up
+          {/if}
         </button>
       </div>
       <!-- Accordion: summary card -->
       {#if chat.catchUpExpanded[channel.id] && chat.catchUpSummaries[channel.id]}
         {@const summary = chat.catchUpSummaries[channel.id]!}
-        <div transition:slide={{ duration: 200 }} class="rounded-xl bg-bg-surface border border-border/30 px-3 py-3">
+        <div transition:slide={{ duration: 200 }} class="rounded-xs bg-bg-surface border border-border/30 px-3 py-3">
           {#if summary.isUpToDate}
             <div class="text-center py-3">
               <p class="text-xs text-text-muted">You're all caught up</p>
@@ -154,12 +153,15 @@
     <div class="px-4 space-y-1 pb-4">
       {#each chat.members as member}
         <div class="flex items-center gap-2 py-1.5 text-sm">
-          <span class="w-2 h-2 rounded-full flex-shrink-0
-                 {member.status === 'online' ? 'bg-text-primary' : member.status === 'away' ? 'bg-warning' : 'bg-text-muted'}"></span>
+          <span class="text-[10px] font-bold flex-shrink-0 w-5 text-center
+                 {member.status === 'online' ? 'text-text-primary' : 'text-text-muted'}">
+            {member.status === 'online' ? 'ON' : 'OFF'}
+          </span>
+          <span class="w-px h-3 bg-border flex-shrink-0"></span>
           <span class="text-text-secondary truncate">{member.displayName}</span>
           <span class="text-xs text-text-muted font-mono">{truncateAddress(member.address)}</span>
           {#if member.twinEnabled}
-            <TwinStatusBadge small active />
+            <span class="text-[9px] px-1 py-px rounded-xs bg-text-primary text-bg font-bold flex-shrink-0">TWIN</span>
           {/if}
         </div>
       {/each}
@@ -173,14 +175,17 @@
   <div class="border-t border-border p-3 bg-bg-surface">
     <button
       onclick={onOpenTwin}
-      class="w-full flex items-center justify-between px-4 py-3 rounded-md
-             border border-twin/30 text-twin hover:bg-twin/10 transition-colors"
+      class="w-full relative flex items-center justify-center rounded-xs
+             bg-text-primary text-bg hover:opacity-90 transition-colors overflow-hidden"
     >
-      <div class="flex items-center gap-2">
-        <span class="text-base">🤖</span>
-        <span class="text-sm font-medium">Twin</span>
-      </div>
-      <TwinStatusBadge active={twin.enabled} />
+      <span class="text-sm font-bold py-3">Your Twin</span>
+      <span class="absolute right-0 top-0 bottom-0 flex items-center justify-center px-3
+                   {twin.enabled ? 'bg-bg text-text-primary' : 'bg-bg-hover text-text-muted'} border border-border">
+        <span class="flex items-center gap-1 text-xs font-medium">
+          <span class="w-1.5 h-1.5 rounded-full {twin.enabled ? 'bg-text-primary animate-pulse' : 'bg-text-muted'}"></span>
+          {twin.enabled ? 'ON' : 'OFF'}
+        </span>
+      </span>
     </button>
   </div>
 </div>

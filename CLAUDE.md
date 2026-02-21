@@ -57,16 +57,31 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 **Screens:**
 1. **Landing** - wallet connect (SIWE), shown when not connected
 2. **Setup Account** (2-step onboarding, first-time users):
-   - Step 1: avatar (upload or initials placeholder) + username
-   - Step 2: personality, interests, response style as free-text fields for Twin (skip available)
-3. **Channel List** - channel rows with unread badges, per-channel "Catch up" button (inline accordion with private rolling summary), online members, twin toggle, profile avatar → settings
-4. **Chat** - back button, channel header, message bubbles (Signal-style, own=right/dark, others=left/light), rounded pill input with send button
-5. **Twin Config** - dismissable explainer, enable toggle, personality, interests, response style, autonomous cap (USD)
-6. **Settings** - edit avatar (upload or initials placeholder) + username, save changes, logout (danger color)
+   - Step 1: avatar (cuboid `rounded-xs`, upload/change/remove) + username
+   - Step 2: personality, interests, response style as accordion fields with per-field Save/Cancel (skip available)
+3. **Channel List** - channel rows (`rounded-xs`) with inline unread pill badge, per-channel "Catch up" button (full-width dark bg below channel row), member list with ON/OFF status + divider + TWIN badge, "Your Twin" button (dark bg, centered text, status badge on right), profile avatar (cuboid) → settings
+4. **Chat** - back button, channel header, Signal-style bubbles (`rounded-[18px]`), cuboid avatars (`rounded-xs`), signal voting pill, twin bubbles (transparent/dashed), card messages (swap-proposal, price, dao-balance, summary)
+5. **Twin Config** - "What's a Twin?" accordion (dark bg header with info icon, light bg content), enable toggle (auto-saves), personality/interests/response style/autonomous cap as accordion fields with edit icon + per-field Save/Cancel (disabled until changed)
+6. **Settings** - edit avatar (cuboid `rounded-xs`, upload/change/remove) + username, save changes, logout (danger color)
+
+**Design system:**
+- Less rounded: `rounded-xs` (2px) as default for cards, badges, buttons, toggles, avatars
+- Chat bubbles: Signal-style `rounded-[18px]` with 4px grouped corners for speech-bubble tails
+- Badges (TWIN, PRICE, SWAP PROPOSAL, DAO TREASURY, status): dark bg (`bg-text-primary`), light font (`text-bg`), bold, `rounded-xs`
+- Twin chat bubbles: transparent bg with dashed border (`border-dashed border-border/40`), twin name bold
+- Buttons (primary): dark bg, light font, bold, `rounded-xs`
+- Buttons (secondary): transparent, dark border, dark font, bold, `rounded-xs`
+- Editable fields use accordion pattern: edit icon (left) + label/description (center) + chevron (right), expand to reveal textarea + Save/Cancel buttons (disabled until changed)
+- Enable Twin toggle: custom `rounded-xs` switch with ON/OFF label, auto-saves on toggle
+- Member list: ON/OFF status text (fixed width) + divider + username + address + TWIN badge if enabled
+- Signal voting pill: `rounded-[18px]`, matches bubble style
+- Signal high score: thick dark border (`border-2 border-text-primary`) instead of green glow; low score fades with opacity
+- Auto-scroll: only triggers on new messages (message count change), not on signal vote updates
 
 **Design tokens** (Tailwind v4 `@theme` in `web/src/app.css`):
+- Radii: xs=2px, sm=2px, md=3px, lg=4px, xl=6px, 2xl=8px, 3xl=10px
 - Light mode: bg `#d4ded1`, surface `#c8d4c5`, text/border/accent `#0d0d0d`
-- Twin: purple `#7c3aed`
+- Twin: purple `#7c3aed` (used sparingly for mentions, not badges/bubbles)
 - Font: Satoshi (Fontshare CDN) + JetBrains Mono for code/addresses
 - CSS utilities: `.crt-glow`, `.crt-border`, `.text-glow`, `.twin-glow`, `.phone-frame`
 
@@ -89,7 +104,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 
 - `wallet.svelte.ts` - address, connected, chainId, signature, siweMessage
 - `chat.svelte.ts` - messages, channels, activeChannel, members, unreadCounts, viewingChat flag, catchUpSummaries/Loading/Expanded (per-channel rolling context), typingUsers (tracks human vs twin typing separately)
-- `twin.svelte.ts` - twin config, load/save/updateField
+- `twin.svelte.ts` - twin config, load/save/updateField, hasChanges (dirty tracking via savedConfig snapshot)
 - `profile.svelte.ts` - displayName, avatarUrl (set on login, updated from settings)
 
 ## API Routes (Backend)
@@ -109,9 +124,9 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 ## Slash Commands (in chat)
 
 - `/swap ETH USDC 0.01` - fetches Uniswap quote, renders SwapProposalCard
-- `/price ETH` - inline price display
+- `/price ETH` - renders PriceCard with token price (with token autocomplete in input)
+- `/daobalance` - renders DaoBalanceCard with DAO treasury balances (ETH, WETH, USDC, UNI)
 - `/poll "Question?" Option1, Option2` - creates poll card
-- `/daobalance` - shows DAO treasury balances (ETH, WETH, USDC, UNI)
 
 ## Socket.IO Events
 

@@ -90,17 +90,32 @@
   <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6">
     <!-- Avatar Preview -->
     <div class="flex flex-col items-center gap-3">
-      <div class="w-20 h-20 rounded-full border-2 border-border bg-bg-elevated flex items-center justify-center overflow-hidden">
+      <div class="w-20 h-20 rounded-xs border-2 border-border bg-bg-elevated flex items-center justify-center overflow-hidden">
         {#if customAvatarUrl}
           <img src={customAvatarUrl} alt="Avatar" class="w-full h-full object-cover" />
         {:else}
           <span class="text-xl font-semibold text-text-muted">{initials}</span>
         {/if}
       </div>
-      <label class="text-xs text-text-muted underline cursor-pointer hover:text-text-secondary transition-colors">
-        {customAvatarUrl ? 'Change photo' : 'Upload photo'}
-        <input type="file" accept="image/*" class="hidden" onchange={handleFileUpload} />
-      </label>
+      {#if customAvatarUrl}
+        <div class="flex flex-col items-center gap-1">
+          <label class="text-xs text-text-muted underline cursor-pointer hover:text-text-secondary transition-colors">
+            Change photo
+            <input type="file" accept="image/*" class="hidden" onchange={handleFileUpload} />
+          </label>
+          <button
+            onclick={() => { customAvatarUrl = ''; saved = false; }}
+            class="text-xs text-danger underline hover:opacity-70 transition-colors"
+          >
+            Remove
+          </button>
+        </div>
+      {:else}
+        <label class="text-xs text-text-muted underline cursor-pointer hover:text-text-secondary transition-colors">
+          Upload photo
+          <input type="file" accept="image/*" class="hidden" onchange={handleFileUpload} />
+        </label>
+      {/if}
     </div>
 
     <!-- Username Input -->
