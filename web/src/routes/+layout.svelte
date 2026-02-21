@@ -102,9 +102,25 @@
   <div class="phone-frame bg-bg flex flex-col">
     {#if !wallet.connected}
       <div class="flex-1 flex flex-col items-center justify-center px-6" in:fade={{ duration: 200 }}>
-        <div class="text-center space-y-6 w-full">
-          <h1 class="text-4xl font-bold text-text-primary tracking-tight mb-1">TwinGovernance</h1>
-          <p class="text-text-secondary text-sm">Your Digital Twin for Governance</p>
+        <!-- Speech bubble -->
+        <div class="relative w-full max-w-sm mb-2">
+          <div class="rounded-xs border-2 border-text-primary bg-bg px-8 py-6 text-center">
+            <h1 class="text-3xl font-bold text-text-primary tracking-tight">TwinGovernance</h1>
+            <p class="text-text-secondary text-sm mt-2">Your Digital Twin for Governance</p>
+          </div>
+          <!-- Speech bubble tail -->
+          <div class="flex justify-center">
+            <div class="w-4 h-4 border-r-2 border-b-2 border-text-primary bg-bg rotate-45 -mt-2"></div>
+          </div>
+        </div>
+
+        <!-- Character SVG -->
+        <div class="w-56 h-56 mb-6">
+          <img src="/images/OCBTalk.svg" alt="Twin character" class="w-full h-full" />
+        </div>
+
+        <!-- Login button -->
+        <div class="w-full max-w-sm">
           <WalletConnect />
         </div>
       </div>

@@ -55,7 +55,7 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 - `.phone-frame` class defined in `app.css`
 
 **Screens:**
-1. **Landing** - wallet connect (SIWE), shown when not connected
+1. **Landing** - speech bubble (thick dark border, app bg) with title/subtitle + OCBTalk.svg pixel character below + "Log in" button, Sepolia disclaimer at bottom
 2. **Setup Account** (2-step onboarding, first-time users):
    - Step 1: avatar (cuboid `rounded-xs`, upload/change/remove) + username
    - Step 2: personality, interests, response style as accordion fields with per-field Save/Cancel (skip available)
@@ -84,6 +84,8 @@ Browser ←→ Socket.IO (ws://backend:3002) ←→ Backend ←→ AI Agent (htt
 - Twin: purple `#7c3aed` (used sparingly for mentions, not badges/bubbles)
 - Font: Satoshi (Fontshare CDN) + JetBrains Mono for code/addresses
 - CSS utilities: `.crt-glow`, `.crt-border`, `.text-glow`, `.twin-glow`, `.phone-frame`
+- Favicon: `web/static/images/OCB.svg`
+- Static assets: `web/static/images/` (OCB.svg, OCBTalk.svg — pixel art characters)
 
 ## Auth Flow
 
