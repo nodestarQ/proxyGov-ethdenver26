@@ -59,6 +59,27 @@ export const channelContexts = sqliteTable('channel_contexts', {
   createdAt: text('created_at').notNull()
 });
 
+export const swapProposals = sqliteTable('swap_proposals', {
+  id: text('id').primaryKey(),
+  channelId: text('channel_id').notNull().references(() => channels.id),
+  creator: text('creator').notNull(),
+  creatorName: text('creator_name').notNull(),
+  tokenInAddress: text('token_in_address').notNull(),
+  tokenOutAddress: text('token_out_address').notNull(),
+  tokenInSymbol: text('token_in_symbol').notNull(),
+  tokenOutSymbol: text('token_out_symbol').notNull(),
+  amountIn: text('amount_in').notNull(),
+  amountOut: text('amount_out').notNull(),
+  amountInUsd: real('amount_in_usd').notNull(),
+  quote: text('quote'), // JSON string
+  votes: text('votes').notNull().default('[]'), // JSON string
+  totalMembers: integer('total_members').notNull(),
+  status: text('status', { enum: ['pending', 'approved', 'executing', 'executed', 'failed'] }).default('pending').notNull(),
+  txHash: text('tx_hash'),
+  failReason: text('fail_reason'),
+  createdAt: text('created_at').notNull()
+});
+
 export const polls = sqliteTable('polls', {
   id: text('id').primaryKey(),
   channelId: text('channel_id').notNull().references(() => channels.id),

@@ -85,6 +85,11 @@ export const chat = {
     socket.emit('channel:join', channelId);
   },
 
+  voteOnSwap(proposalId: string, vote: 'yes' | 'no') {
+    const socket = getSocket();
+    socket.emit('swap:vote', { proposalId, vote });
+  },
+
   sendMessage(content: string, type: 'text' | 'swap-proposal' | 'poll' | 'summary' | 'opportunity' | 'system' = 'text') {
     const socket = getSocket();
     socket.emit('message:send', {
@@ -159,6 +164,20 @@ export const chat = {
         }
       }
       state.members = updated;
+    });
+
+    socket.on('swap:update', (proposal) => {
+      // Update the matching swap-proposal message's content
+      state.messages = state.messages.map(m => {
+        if (m.type !== 'swap-proposal') return m;
+        try {
+          const parsed = JSON.parse(m.content);
+          if (parsed.proposalId === proposal.proposalId) {
+            return { ...m, content: JSON.stringify(proposal) };
+          }
+        } catch { /* ignore parse errors */ }
+        return m;
+      });
     });
 
     socket.on('user:typing', ({ address, channelId, isTwin }) => {

@@ -14,17 +14,18 @@
   </div>
 
   <div class="flex items-center gap-2 text-sm">
-    <span class="font-mono font-bold text-text-primary">{payload.amount}</span>
-    <span class="text-accent font-medium">{payload.tokenIn}</span>
+    <span class="font-mono font-bold text-text-primary">{payload.amountIn}</span>
+    <span class="text-accent font-medium">{payload.tokenInSymbol}</span>
     <span class="text-text-muted">→</span>
-    <span class="text-accent font-medium">{payload.tokenOut}</span>
+    <span class="font-mono font-bold text-text-primary">{payload.amountOut}</span>
+    <span class="text-accent font-medium">{payload.tokenOutSymbol}</span>
   </div>
 
   {#if payload.quote}
     <div class="mt-2 space-y-1 text-xs text-text-secondary">
       <div class="flex justify-between">
         <span>Expected output</span>
-        <span class="font-mono">{payload.quote.amountOut} {payload.tokenOut}</span>
+        <span class="font-mono">{payload.quote.amountOut} {payload.tokenOutSymbol}</span>
       </div>
       <div class="flex justify-between">
         <span>Price impact</span>

@@ -81,6 +81,17 @@ export interface TokenPrice {
   timestamp: string;
 }
 
+// ─── Swap Proposals ─────────────────────────────────────────
+export type SwapProposalStatus = 'pending' | 'approved' | 'executing' | 'executed' | 'failed';
+
+export interface SwapVote {
+  voter: string;
+  voterName: string;
+  vote: 'yes' | 'no';
+  isTwin: boolean;
+  timestamp: string;
+}
+
 // ─── Polls ───────────────────────────────────────────────────────
 export interface Poll {
   id: string;
@@ -111,6 +122,7 @@ export interface ServerToClientEvents {
   'channel:members': (data: { channelId: string; members: User[] }) => void;
   'user:typing': (data: { address: string; channelId: string; isTwin?: boolean }) => void;
   'user:stop-typing': (data: { address: string; channelId: string; isTwin?: boolean }) => void;
+  'swap:update': (proposal: SwapProposalPayload) => void;
 }
 
 export interface ClientToServerEvents {
@@ -123,14 +135,28 @@ export interface ClientToServerEvents {
   'poll:vote': (data: { pollId: string; optionId: string }) => void;
   'user:typing': (channelId: string) => void;
   'user:stop-typing': (channelId: string) => void;
+  'swap:vote': (data: { proposalId: string; vote: 'yes' | 'no' }) => void;
 }
 
 // ─── API Payloads ────────────────────────────────────────────────
 export interface SwapProposalPayload {
-  tokenIn: string;   // symbol
-  tokenOut: string;   // symbol
-  amount: string;
+  proposalId: string;
+  tokenInSymbol: string;
+  tokenOutSymbol: string;
+  tokenInAddress: string;
+  tokenOutAddress: string;
+  amountIn: string;
+  amountOut: string;
+  amountInUsd: number;
   quote?: UniswapQuote;
+  votes: SwapVote[];
+  totalMembers: number;
+  status: SwapProposalStatus;
+  txHash?: string;
+  failReason?: string;
+  createdAt: string;
+  creator: string;
+  creatorName: string;
 }
 
 export interface SummaryPayload {

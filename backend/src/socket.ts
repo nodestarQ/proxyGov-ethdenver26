@@ -1,10 +1,11 @@
 import { Server, type Socket } from 'socket.io';
 import { db } from './db.js';
-import { users, messages, channelMembers } from './schema.js';
+import { users, messages, channelMembers, swapProposals, twinConfigs } from './schema.js';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuid } from 'uuid';
 import { verifyMessage, type Address } from 'viem';
-import type { ServerToClientEvents, ClientToServerEvents, User, Message } from '../../shared/types.js';
+import type { ServerToClientEvents, ClientToServerEvents, User, Message, SwapProposalPayload, SwapVote } from '../../shared/types.js';
+import { resolveTokenByAddress, checkDaoBalance, getQuote, getTokenPrice, executeSwap, getTokenAddress } from './uniswap.js';
 
 // Track connected sockets by address
 const connectedUsers = new Map<string, { socketId: string; displayName: string }>();
@@ -204,6 +205,34 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       socket.to(channelId).emit('user:stop-typing', { address: userAddress, channelId });
     });
 
+    socket.on('swap:vote', async ({ proposalId, vote }) => {
+      if (!userAddress) return;
+
+      const proposal = db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get();
+      if (!proposal || proposal.status !== 'pending') return;
+
+      const votes: SwapVote[] = JSON.parse(proposal.votes);
+      if (votes.some(v => v.voter === userAddress && !v.isTwin)) return; // already voted
+
+      const userData = connectedUsers.get(userAddress);
+      votes.push({
+        voter: userAddress,
+        voterName: userData?.displayName ?? userAddress.slice(0, 8),
+        vote,
+        isTwin: false,
+        timestamp: new Date().toISOString()
+      });
+
+      db.update(swapProposals).set({ votes: JSON.stringify(votes) }).where(eq(swapProposals.id, proposalId)).run();
+
+      const payload = buildSwapPayload(
+        db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get()!
+      );
+      io.to(proposal.channelId).emit('swap:update', payload);
+
+      await checkSwapThreshold(io, proposalId);
+    });
+
     socket.on('disconnect', () => {
       if (userAddress) {
         connectedUsers.delete(userAddress);
@@ -267,41 +296,193 @@ async function handleSlashCommand(
   const parts = content.trim().split(/\s+/);
   const command = parts[0].toLowerCase();
 
-  if (command === '/swap' && parts.length >= 4) {
-    // /swap ETH USDC 0.01
-    const [, tokenIn, tokenOut, amount] = parts;
+  if (command === '/swap' && parts.length >= 5) {
+    // /swap <tokenInAddr> <amountIn> <tokenOutAddr> <amountOut>
+    const [, tokenInAddr, amountIn, tokenOutAddr, amountOut] = parts;
     try {
-      const backendUrl = process.env.PORT ? `http://localhost:${process.env.PORT}` : 'http://localhost:3000';
-      const res = await fetch(`${backendUrl}/api/uniswap/quote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokenIn, tokenOut, amount })
-      });
-      const quote = await res.json();
+      // Resolve tokens by address
+      const tokenInInfo = resolveTokenByAddress(tokenInAddr);
+      const tokenOutInfo = resolveTokenByAddress(tokenOutAddr);
+      if (!tokenInInfo || !tokenOutInfo) {
+        emitSystemMessage(io, channelId, `Unknown token address: ${!tokenInInfo ? tokenInAddr : tokenOutAddr}. Supported: ETH (0x0000...0000), WETH, USDC, UNI.`);
+        return;
+      }
 
-      const payload = JSON.stringify({
-        tokenIn: tokenIn.toUpperCase(),
-        tokenOut: tokenOut.toUpperCase(),
-        amount,
-        quote: res.ok ? quote : null
-      });
+      // Check DAO balance
+      const balanceCheck = await checkDaoBalance(tokenInAddr, amountIn, tokenInInfo.decimals);
+      if (!balanceCheck.sufficient) {
+        emitSystemMessage(io, channelId, `Insufficient DAO treasury balance for ${amountIn} ${tokenInInfo.symbol}. Treasury has ${balanceCheck.balance} ${tokenInInfo.symbol}.`);
+        return;
+      }
+
+      // Get USD value for twin cap comparison
+      const tokenPrice = await getTokenPrice(tokenInInfo.symbol);
+      const amountInUsd = parseFloat(amountIn) * tokenPrice;
+
+      // Get quote
+      let quote = null;
+      try {
+        quote = await getQuote(tokenInInfo.symbol, tokenOutInfo.symbol, amountIn);
+      } catch (err) {
+        console.warn('[swap] Quote failed, proceeding without:', err);
+      }
+
+      // Count channel members for threshold
+      const memberRows = db.select().from(channelMembers)
+        .where(eq(channelMembers.channelId, channelId))
+        .all();
+      const totalMembers = memberRows.length;
+
+      // Create proposal
+      const proposalId = uuid();
+      const creatorName = connectedUsers.get(sender)?.displayName ?? sender.slice(0, 8);
+      const now = new Date().toISOString();
+
+      db.insert(swapProposals).values({
+        id: proposalId,
+        channelId,
+        creator: sender,
+        creatorName,
+        tokenInAddress: tokenInAddr,
+        tokenOutAddress: tokenOutAddr,
+        tokenInSymbol: tokenInInfo.symbol,
+        tokenOutSymbol: tokenOutInfo.symbol,
+        amountIn,
+        amountOut,
+        amountInUsd,
+        quote: quote ? JSON.stringify(quote) : null,
+        votes: '[]',
+        totalMembers,
+        status: 'pending',
+        createdAt: now
+      }).run();
+
+      const proposalPayload: SwapProposalPayload = {
+        proposalId,
+        tokenInSymbol: tokenInInfo.symbol,
+        tokenOutSymbol: tokenOutInfo.symbol,
+        tokenInAddress: tokenInAddr,
+        tokenOutAddress: tokenOutAddr,
+        amountIn,
+        amountOut,
+        amountInUsd,
+        quote: quote ?? undefined,
+        votes: [],
+        totalMembers,
+        status: 'pending',
+        createdAt: now,
+        creator: sender,
+        creatorName
+      };
 
       const msg: Message = {
         id: uuid(),
         channelId,
         sender,
-        senderName: connectedUsers.get(sender)?.displayName ?? sender.slice(0, 8),
+        senderName: creatorName,
         isTwin: false,
         type: 'swap-proposal',
-        content: payload,
+        content: JSON.stringify(proposalPayload),
         signal: { up: [], down: [] },
-        timestamp: new Date().toISOString()
+        timestamp: now
       };
 
       db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
       io.to(channelId).emit('message:new', msg);
+
+      // Trigger twin auto-votes
+      await checkTwinSwapVotes(io, channelId, proposalId, amountInUsd);
     } catch (err) {
-      console.error('[swap] Error fetching quote:', err);
+      console.error('[swap] Error creating swap proposal:', err);
+      emitSystemMessage(io, channelId, 'Failed to create swap proposal. Please try again.');
+    }
+  } else if (command === '/swap' && parts.length >= 4) {
+    // Legacy: /swap ETH USDC 0.01 (symbol-based)
+    const [, tokenIn, tokenOut, amount] = parts;
+    try {
+      const tokenInInfo = getTokenAddress(tokenIn);
+      const tokenOutInfo = getTokenAddress(tokenOut);
+      if (!tokenInInfo || !tokenOutInfo) {
+        emitSystemMessage(io, channelId, `Unknown token: ${!tokenInInfo ? tokenIn : tokenOut}`);
+        return;
+      }
+
+      const tokenPrice = await getTokenPrice(tokenIn);
+      const amountInUsd = parseFloat(amount) * tokenPrice;
+
+      let quote = null;
+      try {
+        quote = await getQuote(tokenIn, tokenOut, amount);
+      } catch (err) {
+        console.warn('[swap] Quote failed:', err);
+      }
+
+      const memberRows = db.select().from(channelMembers)
+        .where(eq(channelMembers.channelId, channelId))
+        .all();
+      const totalMembers = memberRows.length;
+
+      const proposalId = uuid();
+      const creatorName = connectedUsers.get(sender)?.displayName ?? sender.slice(0, 8);
+      const now = new Date().toISOString();
+      const amountOut = quote?.amountOut ?? '0';
+
+      db.insert(swapProposals).values({
+        id: proposalId,
+        channelId,
+        creator: sender,
+        creatorName,
+        tokenInAddress: tokenInInfo.address,
+        tokenOutAddress: tokenOutInfo.address,
+        tokenInSymbol: tokenIn.toUpperCase(),
+        tokenOutSymbol: tokenOut.toUpperCase(),
+        amountIn: amount,
+        amountOut,
+        amountInUsd,
+        quote: quote ? JSON.stringify(quote) : null,
+        votes: '[]',
+        totalMembers,
+        status: 'pending',
+        createdAt: now
+      }).run();
+
+      const proposalPayload: SwapProposalPayload = {
+        proposalId,
+        tokenInSymbol: tokenIn.toUpperCase(),
+        tokenOutSymbol: tokenOut.toUpperCase(),
+        tokenInAddress: tokenInInfo.address,
+        tokenOutAddress: tokenOutInfo.address,
+        amountIn: amount,
+        amountOut,
+        amountInUsd,
+        quote: quote ?? undefined,
+        votes: [],
+        totalMembers,
+        status: 'pending',
+        createdAt: now,
+        creator: sender,
+        creatorName
+      };
+
+      const msg: Message = {
+        id: uuid(),
+        channelId,
+        sender,
+        senderName: creatorName,
+        isTwin: false,
+        type: 'swap-proposal',
+        content: JSON.stringify(proposalPayload),
+        signal: { up: [], down: [] },
+        timestamp: now
+      };
+
+      db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
+      io.to(channelId).emit('message:new', msg);
+
+      await checkTwinSwapVotes(io, channelId, proposalId, amountInUsd);
+    } catch (err) {
+      console.error('[swap] Error creating swap proposal:', err);
+      emitSystemMessage(io, channelId, 'Failed to create swap proposal. Please try again.');
     }
   } else if (command === '/poll' && parts.length >= 2) {
     // /poll "Question?" Option1, Option2, Option3
@@ -446,6 +627,145 @@ async function checkTwinResponses(
     }
   } catch (err) {
     console.error('[twin] Error checking twin responses:', err);
+  }
+}
+
+// ─── Swap Proposal Helpers ────────────────────────────────────
+
+function buildSwapPayload(row: any): SwapProposalPayload {
+  const votes: SwapVote[] = JSON.parse(row.votes);
+  return {
+    proposalId: row.id,
+    tokenInSymbol: row.tokenInSymbol,
+    tokenOutSymbol: row.tokenOutSymbol,
+    tokenInAddress: row.tokenInAddress,
+    tokenOutAddress: row.tokenOutAddress,
+    amountIn: row.amountIn,
+    amountOut: row.amountOut,
+    amountInUsd: row.amountInUsd,
+    quote: row.quote ? JSON.parse(row.quote) : undefined,
+    votes,
+    totalMembers: row.totalMembers,
+    status: row.status,
+    txHash: row.txHash ?? undefined,
+    failReason: row.failReason ?? undefined,
+    createdAt: row.createdAt,
+    creator: row.creator,
+    creatorName: row.creatorName
+  };
+}
+
+function emitSystemMessage(
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  channelId: string,
+  content: string
+) {
+  const msg: Message = {
+    id: uuid(),
+    channelId,
+    sender: 'system',
+    senderName: 'System',
+    isTwin: false,
+    type: 'system',
+    content,
+    signal: { up: [], down: [] },
+    timestamp: new Date().toISOString()
+  };
+  db.insert(messages).values({ ...msg, signal: '{"up":[],"down":[]}', isTwin: false }).run();
+  io.to(channelId).emit('message:new', msg);
+}
+
+async function checkSwapThreshold(
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  proposalId: string
+) {
+  const proposal = db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get();
+  if (!proposal || proposal.status !== 'pending') return;
+
+  const votes: SwapVote[] = JSON.parse(proposal.votes);
+  const yesVotes = votes.filter(v => v.vote === 'yes').length;
+
+  if (yesVotes > proposal.totalMembers / 2) {
+    // Threshold reached — execute
+    db.update(swapProposals).set({ status: 'executing' }).where(eq(swapProposals.id, proposalId)).run();
+    const executingPayload = buildSwapPayload(
+      db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get()!
+    );
+    io.to(proposal.channelId).emit('swap:update', executingPayload);
+    emitSystemMessage(io, proposal.channelId, `Swap proposal approved (${yesVotes}/${proposal.totalMembers} votes). Executing swap...`);
+
+    // Execute swap
+    const result = await executeSwap(proposal.tokenInSymbol, proposal.tokenOutSymbol, proposal.amountIn);
+
+    if (result.success) {
+      db.update(swapProposals).set({ status: 'executed', txHash: result.txHash ?? null }).where(eq(swapProposals.id, proposalId)).run();
+      const donePayload = buildSwapPayload(
+        db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get()!
+      );
+      io.to(proposal.channelId).emit('swap:update', donePayload);
+      emitSystemMessage(io, proposal.channelId, `Swap executed! ${proposal.amountIn} ${proposal.tokenInSymbol} → ${proposal.amountOut} ${proposal.tokenOutSymbol}. Tx: ${result.txHash}`);
+    } else {
+      db.update(swapProposals).set({ status: 'failed', failReason: result.error ?? 'Unknown error' }).where(eq(swapProposals.id, proposalId)).run();
+      const failPayload = buildSwapPayload(
+        db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get()!
+      );
+      io.to(proposal.channelId).emit('swap:update', failPayload);
+      emitSystemMessage(io, proposal.channelId, `Swap execution failed: ${result.error}`);
+    }
+  }
+}
+
+async function checkTwinSwapVotes(
+  io: Server<ClientToServerEvents, ServerToClientEvents>,
+  channelId: string,
+  proposalId: string,
+  amountInUsd: number
+) {
+  const memberRows = db.select().from(channelMembers)
+    .where(eq(channelMembers.channelId, channelId))
+    .all();
+
+  for (const member of memberRows) {
+    const user = db.select().from(users).where(eq(users.address, member.userAddress)).get();
+    if (!user || user.status === 'online') continue; // Only for away/offline users
+
+    const twinConfig = db.select().from(twinConfigs)
+      .where(eq(twinConfigs.ownerAddress, member.userAddress))
+      .get();
+
+    if (!twinConfig || !twinConfig.enabled) continue;
+
+    // Re-check proposal status (may have been resolved by a previous twin vote)
+    const currentProposal = db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get();
+    if (!currentProposal || currentProposal.status !== 'pending') return;
+
+    const currentVotes: SwapVote[] = JSON.parse(currentProposal.votes);
+    if (currentVotes.some(v => v.voter === member.userAddress)) continue; // Already voted
+
+    if (amountInUsd <= twinConfig.autonomousCapUsd) {
+      // Within cap — auto-vote yes
+      currentVotes.push({
+        voter: member.userAddress,
+        voterName: user.displayName,
+        vote: 'yes',
+        isTwin: true,
+        timestamp: new Date().toISOString()
+      });
+
+      db.update(swapProposals).set({ votes: JSON.stringify(currentVotes) }).where(eq(swapProposals.id, proposalId)).run();
+
+      const payload = buildSwapPayload(
+        db.select().from(swapProposals).where(eq(swapProposals.id, proposalId)).get()!
+      );
+      io.to(channelId).emit('swap:update', payload);
+
+      emitSystemMessage(io, channelId, `${user.displayName}'s twin voted YES ($${amountInUsd.toFixed(2)} is within their $${twinConfig.autonomousCapUsd} cap)`);
+
+      await checkSwapThreshold(io, proposalId);
+    } else {
+      // Exceeds cap
+      emitSystemMessage(io, channelId, `${user.displayName}'s twin: This $${amountInUsd.toFixed(2)} swap exceeds my $${twinConfig.autonomousCapUsd} cap. @${user.displayName} needs to vote manually.`);
+    }
   }
 }
 

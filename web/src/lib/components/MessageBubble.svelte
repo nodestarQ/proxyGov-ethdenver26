@@ -4,6 +4,7 @@
   import { chat } from '$lib/stores/chat.svelte';
   import { formatTimestamp } from '$lib/utils/format';
   import SwapProposalCard from './SwapProposalCard.svelte';
+  import SwapVoteCard from './SwapVoteCard.svelte';
   import PollCard from './PollCard.svelte';
   import SummaryCard from './SummaryCard.svelte';
   import OpportunityAlert from './OpportunityAlert.svelte';
@@ -89,6 +90,8 @@
   <div class="px-4 py-1.5">
     <p class="text-xs text-text-muted italic text-center">{message.content}</p>
   </div>
+{:else if message.type === 'swap-proposal'}
+  <SwapVoteCard payload={JSON.parse(message.content)} />
 {:else}
   <div class="{!isFirstInGroup ? 'pt-0.5' : 'pt-1'} px-3 pb-0" style="max-width: 85%{isOwn ? '; margin-left: auto' : ''}">
     {#if !isOwn}
@@ -128,9 +131,7 @@
                           ? 'bg-twin/10 border border-twin/20 text-text-primary'
                           : 'bg-bg-surface border border-border/40 text-text-primary'}">
               <div class="text-[13px] leading-snug">
-                {#if message.type === 'swap-proposal'}
-                  <SwapProposalCard payload={JSON.parse(message.content)} />
-                {:else if message.type === 'poll'}
+                {#if message.type === 'poll'}
                   <PollCard payload={JSON.parse(message.content)} />
                 {:else if message.type === 'summary'}
                   <SummaryCard payload={JSON.parse(message.content)} />
@@ -190,9 +191,7 @@
                       ? 'bg-twin/15 border border-twin/30 text-text-primary'
                       : 'bg-text-primary text-bg'}">
           <div class="text-[13px] leading-snug">
-            {#if message.type === 'swap-proposal'}
-              <SwapProposalCard payload={JSON.parse(message.content)} />
-            {:else if message.type === 'poll'}
+            {#if message.type === 'poll'}
               <PollCard payload={JSON.parse(message.content)} />
             {:else if message.type === 'summary'}
               <SummaryCard payload={JSON.parse(message.content)} />

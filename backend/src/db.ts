@@ -71,6 +71,27 @@ export function initDb() {
       UNIQUE(channel_id, user_address)
     );
 
+    CREATE TABLE IF NOT EXISTS swap_proposals (
+      id TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL REFERENCES channels(id),
+      creator TEXT NOT NULL,
+      creator_name TEXT NOT NULL,
+      token_in_address TEXT NOT NULL,
+      token_out_address TEXT NOT NULL,
+      token_in_symbol TEXT NOT NULL,
+      token_out_symbol TEXT NOT NULL,
+      amount_in TEXT NOT NULL,
+      amount_out TEXT NOT NULL,
+      amount_in_usd REAL NOT NULL,
+      quote TEXT,
+      votes TEXT NOT NULL DEFAULT '[]',
+      total_members INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      tx_hash TEXT,
+      fail_reason TEXT,
+      created_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS polls (
       id TEXT PRIMARY KEY,
       channel_id TEXT NOT NULL REFERENCES channels(id),

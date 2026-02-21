@@ -16,6 +16,7 @@ import twinRouter from './routes/twin.js';
 import uniswapRouter from './routes/uniswap.js';
 import pollRouter from './routes/poll.js';
 import userRouter from './routes/user.js';
+import swapRouter from './routes/swap.js';
 import { getTokenPrice } from './uniswap.js';
 
 const PORT = parseInt(process.env.PORT || '3002');
@@ -34,6 +35,7 @@ app.use('/api', twinRouter);
 app.use('/api', uniswapRouter);
 app.use('/api', pollRouter);
 app.use('/api', userRouter);
+app.use('/api', swapRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
