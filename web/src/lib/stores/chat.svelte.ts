@@ -123,8 +123,10 @@ export const chat = {
     });
 
     socket.on('user:leave', (address) => {
-      // Keep twin-enabled users in the list (their twin is still active)
-      state.members = state.members.filter(m => m.address !== address || m.twinEnabled);
+      // Mark as offline but keep in list so they remain mentionable
+      state.members = state.members.map(m =>
+        m.address === address ? { ...m, status: 'offline' as const } : m
+      );
     });
 
     socket.on('user:status', ({ address, status }) => {
