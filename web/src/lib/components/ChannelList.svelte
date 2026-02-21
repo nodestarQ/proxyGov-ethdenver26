@@ -149,7 +149,7 @@
 
     <!-- Online Members -->
     <p class="text-[11px] text-text-muted uppercase tracking-wider px-4 pt-5 pb-2">
-      Online - {chat.members.length}
+      Members - {chat.members.length}
     </p>
     <div class="px-4 space-y-1 pb-4">
       {#each chat.members as member}

@@ -112,9 +112,9 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
           db.insert(channelMembers).values({ channelId, userAddress }).run();
         }
 
-        // Send current channel members
+        // Broadcast updated channel members to everyone in the channel
         const members = getChannelMembers(channelId);
-        socket.emit('channel:members', { channelId, members });
+        io.to(channelId).emit('channel:members', { channelId, members });
       }
     });
 
@@ -217,6 +217,15 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
           db.update(users).set({ status: 'offline' }).where(eq(users.address, userAddress)).run();
           io.emit('user:leave', userAddress);
           console.log(`[socket] ${userAddress.slice(0, 8)}... disconnected`);
+        }
+
+        // Broadcast updated member lists to all channels this user was in
+        const userChannels = db.select().from(channelMembers)
+          .where(eq(channelMembers.userAddress, userAddress))
+          .all();
+        for (const ch of userChannels) {
+          const members = getChannelMembers(ch.channelId);
+          io.to(ch.channelId).emit('channel:members', { channelId: ch.channelId, members });
         }
       }
     });

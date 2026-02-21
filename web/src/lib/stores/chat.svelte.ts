@@ -136,7 +136,6 @@ export const chat = {
     });
 
     socket.on('user:leave', (address) => {
-      // Mark as offline but keep in list so they remain mentionable
       state.members = state.members.map(m =>
         m.address === address ? { ...m, status: 'offline' as const } : m
       );
@@ -149,9 +148,17 @@ export const chat = {
     });
 
     socket.on('channel:members', ({ channelId, members }) => {
-      if (channelId === state.activeChannel) {
-        state.members = members;
+      // Merge into global members list: add new users, update existing ones
+      let updated = [...state.members];
+      for (const member of members) {
+        const idx = updated.findIndex(m => m.address === member.address);
+        if (idx >= 0) {
+          updated[idx] = member;
+        } else {
+          updated.push(member);
+        }
       }
+      state.members = updated;
     });
 
     socket.on('user:typing', ({ address, channelId, isTwin }) => {

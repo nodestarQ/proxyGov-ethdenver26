@@ -72,7 +72,7 @@
         <span class="text-text-muted">#</span> {chat.activeChannel}
       </h2>
       <p class="text-[11px] text-text-muted truncate">
-        {chat.members.length} online
+        {chat.members.filter(m => m.status === 'online').length} online
       </p>
     </div>
   </header>
