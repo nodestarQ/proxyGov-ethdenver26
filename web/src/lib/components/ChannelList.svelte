@@ -78,76 +78,73 @@
     <p class="text-[11px] text-text-muted uppercase tracking-wider px-4 pt-4 pb-2">Channels</p>
     <div class="px-3 space-y-2">
     {#each chat.channels as channel}
-      <div class="rounded-xl bg-bg-surface border border-border/30 overflow-hidden">
-        <!-- Channel row -->
-        <div class="flex items-center">
-          <button
-            onclick={() => onSelectChannel(channel.id)}
-            class="flex-1 text-left px-4 py-3 flex items-center justify-between
-                   hover:bg-bg-hover active:bg-bg-elevated transition-colors min-w-0"
-          >
-            <div class="min-w-0">
-              <span class="text-sm font-medium text-text-primary">
-                <span class="text-text-muted">#</span> {channel.name}
-              </span>
-              {#if channel.description}
-                <p class="text-xs text-text-muted mt-0.5">{channel.description}</p>
-              {/if}
-            </div>
-            <div class="flex items-center gap-2 flex-shrink-0">
-              {#if chat.unreadCounts[channel.id]}
-                <span class="min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-text-primary text-bg text-[11px] font-bold">
-                  {chat.unreadCounts[channel.id]}
-                </span>
-              {/if}
-              <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </button>
-          <!-- Catch up button -->
-          <button
-            onclick={(e) => {
-              e.stopPropagation();
-              if (chat.catchUpExpanded[channel.id]) {
-                chat.toggleCatchUpExpanded(channel.id);
-              } else {
-                handleCatchUp(e, channel.id);
-              }
-            }}
-            disabled={chat.catchUpLoading[channel.id]}
-            class="flex-shrink-0 mr-2 px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors whitespace-nowrap
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   {chat.unreadCounts[channel.id]
-                     ? 'border border-twin/40 text-twin hover:bg-twin/10'
-                     : 'border border-border/50 text-text-muted hover:bg-bg-hover'}"
-          >
-            {#if chat.catchUpLoading[channel.id]}
-              ...
-            {:else if chat.catchUpExpanded[channel.id]}
-              Close
-            {:else}
-              Catch up
-            {/if}
-          </button>
-        </div>
-
-        <!-- Accordion: summary card -->
-        {#if chat.catchUpExpanded[channel.id] && chat.catchUpSummaries[channel.id]}
-          {@const summary = chat.catchUpSummaries[channel.id]!}
-          <div transition:slide={{ duration: 200 }} class="px-3 pb-3 border-t border-border/20">
-            {#if summary.isUpToDate}
-              <div class="mt-2 text-center py-3">
-                <p class="text-xs text-text-muted">You're all caught up</p>
-              </div>
-            {:else}
-              <div class="mt-2">
-                <SummaryCard payload={summary} />
-              </div>
+      <div class="flex items-stretch gap-2">
+        <!-- Chat button -->
+        <button
+          onclick={() => onSelectChannel(channel.id)}
+          class="flex-1 text-left px-4 py-3 flex items-center justify-between
+                 rounded-xl bg-bg-surface border border-border/30
+                 hover:bg-bg-hover active:bg-bg-elevated transition-colors min-w-0"
+        >
+          <div class="min-w-0">
+            <span class="text-sm font-medium text-text-primary">
+              <span class="text-text-muted">#</span> {channel.name}
+            </span>
+            {#if channel.description}
+              <p class="text-xs text-text-muted mt-0.5">{channel.description}</p>
             {/if}
           </div>
-        {/if}
+          <div class="flex items-center gap-2 flex-shrink-0">
+            {#if chat.unreadCounts[channel.id]}
+              <span class="min-w-5 h-5 flex items-center justify-center px-1.5 rounded-full bg-text-primary text-bg text-[11px] font-bold">
+                {chat.unreadCounts[channel.id]}
+              </span>
+            {/if}
+            <svg class="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </button>
+        <!-- Catch up button -->
+        <button
+          onclick={(e) => {
+            e.stopPropagation();
+            if (chat.catchUpExpanded[channel.id]) {
+              chat.toggleCatchUpExpanded(channel.id);
+            } else {
+              handleCatchUp(e, channel.id);
+            }
+          }}
+          disabled={chat.catchUpLoading[channel.id]}
+          class="flex-shrink-0 px-4 rounded-xl bg-bg-surface border border-border/30
+                 text-[11px] font-medium transition-colors whitespace-nowrap
+                 disabled:opacity-50 disabled:cursor-not-allowed
+                 {chat.unreadCounts[channel.id]
+                   ? 'text-twin hover:bg-twin/10'
+                   : 'text-text-muted hover:bg-bg-hover'}"
+        >
+          {#if chat.catchUpLoading[channel.id]}
+            ...
+          {:else if chat.catchUpExpanded[channel.id]}
+            Close
+          {:else}
+            Catch up
+          {/if}
+        </button>
       </div>
+      <!-- Accordion: summary card -->
+      {#if chat.catchUpExpanded[channel.id] && chat.catchUpSummaries[channel.id]}
+        {@const summary = chat.catchUpSummaries[channel.id]!}
+        <div transition:slide={{ duration: 200 }} class="rounded-xl bg-bg-surface border border-border/30 px-3 py-3">
+          {#if summary.isUpToDate}
+            <div class="text-center py-3">
+              <p class="text-xs text-text-muted">You're all caught up</p>
+            </div>
+          {:else}
+            <SummaryCard payload={summary} />
+          {/if}
+        </div>
+      {/if}
     {/each}
     </div>
 
