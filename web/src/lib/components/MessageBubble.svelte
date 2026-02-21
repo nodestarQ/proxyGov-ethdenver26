@@ -178,9 +178,8 @@
         </div>
       </div>
     {:else}
-      <!-- Own messages (no avatar) -->
-      <div class="flex items-stretch gap-1 flex-row-reverse">
-        <!-- Bubble -->
+      <!-- Own messages (no avatar, no signal pill) -->
+      <div class="flex flex-row-reverse">
         <div class="min-w-0 rounded-xl px-3 py-2 bg-text-primary text-bg {signalClasses} {groupedBubbleRounding}">
           <div class="text-[13px] leading-snug">
             {#if message.type === 'swap-proposal'}
@@ -198,33 +197,6 @@
           <p class="text-[10px] mt-1 text-bg/60 text-right">
             {formatTimestamp(message.timestamp)}
           </p>
-        </div>
-
-        <!-- Signal voting pill -->
-        <div class="shrink-0 w-8 rounded-xl flex flex-col items-stretch bg-text-primary text-bg">
-          <button
-            onclick={() => chat.addSignal(message.id, 'up')}
-            class="flex-1 flex items-center justify-center rounded-t-lg transition-colors
-                   {userVote === 'up'
-                     ? 'text-green-300 bg-green-400/20'
-                     : 'text-bg/40 hover:text-green-300 hover:bg-green-400/15'}"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 4l4 5H4l4-5z"/>
-            </svg>
-          </button>
-          <div class="h-px mx-1 bg-bg/15"></div>
-          <button
-            onclick={() => chat.addSignal(message.id, 'down')}
-            class="flex-1 flex items-center justify-center rounded-b-lg transition-colors
-                   {userVote === 'down'
-                     ? 'text-red-400 bg-red-400/20'
-                     : 'text-bg/40 hover:text-red-400 hover:bg-red-400/15'}"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 12l4-5H4l4 5z"/>
-            </svg>
-          </button>
         </div>
       </div>
     {/if}

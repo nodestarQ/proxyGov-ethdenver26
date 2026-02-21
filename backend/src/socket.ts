@@ -163,6 +163,9 @@ export function setupSocket(io: Server<ClientToServerEvents, ServerToClientEvent
       const msg = db.select().from(messages).where(eq(messages.id, messageId)).get();
       if (!msg) return;
 
+      // Prevent users from voting on their own messages
+      if (msg.sender === userAddress) return;
+
       const signal: { up: string[]; down: string[] } = JSON.parse(msg.signal);
       const opposite = vote === 'up' ? 'down' : 'up';
 
