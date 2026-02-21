@@ -179,8 +179,16 @@
       </div>
     {:else}
       <!-- Own messages (no avatar, no signal pill) -->
-      <div class="flex flex-row-reverse">
-        <div class="min-w-0 rounded-xl px-3 py-2 bg-text-primary text-bg {signalClasses} {groupedBubbleRounding}">
+      <div class="flex flex-col items-end">
+        {#if message.isTwin && isFirstInGroup}
+          <div class="flex items-center gap-1.5 mb-0.5 px-1">
+            <span class="text-[9px] px-1 py-px rounded bg-twin/20 text-twin font-medium">TWIN</span>
+          </div>
+        {/if}
+        <div class="min-w-0 rounded-xl px-3 py-2 {signalClasses} {groupedBubbleRounding}
+                    {message.isTwin
+                      ? 'bg-twin/15 border border-twin/30 text-text-primary'
+                      : 'bg-text-primary text-bg'}">
           <div class="text-[13px] leading-snug">
             {#if message.type === 'swap-proposal'}
               <SwapProposalCard payload={JSON.parse(message.content)} />
@@ -191,10 +199,10 @@
             {:else if message.type === 'opportunity'}
               <OpportunityAlert payload={JSON.parse(message.content)} />
             {:else}
-              <p class="whitespace-pre-wrap break-words">{#each contentSegments as seg}{#if seg.isMention}<span class="font-semibold text-bg/80">{seg.text}</span>{:else}{seg.text}{/if}{/each}</p>
+              <p class="whitespace-pre-wrap break-words">{#each contentSegments as seg}{#if seg.isMention}<span class="font-semibold {message.isTwin ? 'text-twin' : 'text-bg/80'}">{seg.text}</span>{:else}{seg.text}{/if}{/each}</p>
             {/if}
           </div>
-          <p class="text-[10px] mt-1 text-bg/60 text-right">
+          <p class="text-[10px] mt-1 {message.isTwin ? 'text-text-muted' : 'text-bg/60'} text-right">
             {formatTimestamp(message.timestamp)}
           </p>
         </div>
